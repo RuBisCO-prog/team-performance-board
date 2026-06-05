@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Team Workload Board</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600&display=swap" rel="stylesheet">
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600&display=swap');
@@ -132,15 +133,11 @@ body{font-family:'Outfit',sans-serif;background:var(--wb-bg,#f8f8f8);min-height:
 </div>
 
 <script>
-let tms=[
-  {id:1,initials:'TM1',headerOpen:false},
-  {id:2,initials:'TM2',headerOpen:false},
-  {id:3,initials:'TM3',headerOpen:false},
-  {id:4,initials:'TM4',headerOpen:false}
-];
-let tasks=[],subtasks=[],wps=[
-  {id:'wp1',name:'WP1'},{id:'wp2',name:'WP2'},{id:'wp3',name:'WP3'},{id:'wp4',name:'WP4'}
-];
+const SUPA_URL='https://oqkpqdxjjkpmbabijvsf.supabase.co';
+const SUPA_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9xa3BxZHhqamtwbWJhYmlqdnNmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODA2NzMzNzIsImV4cCI6MjA5NjI0OTM3Mn0.VVYVzmoCLsDyV1Cea2WcorTNjyMw6zlw6AmlmUq0sZI';
+const db=supabase.createClient(SUPA_URL,SUPA_KEY);
+
+let tms=[],tasks=[],subtasks=[],wps=[];
 let openTaskId=null,openDotMenu=null,showCopyMenu=false,pendingTaskId=null;
 let nextTMId=5,nextTaskId=1,nextSubId=1;
 let dragTaskId=null,subDragging=null,dragCardId=null,dragOverCardId=null;
@@ -345,7 +342,23 @@ document.addEventListener('click',function(e){
     if(card){const id=+card.id.replace('card-','');const tm=tms.find(t=>t.id===id);if(tm&&tm.headerOpen&&!e.target.closest('.edit-input')){tm.headerOpen=false;render();}}
   }
 });
-render();
+async function loadAll(){
+  const [tmRes,taskRes,subRes,wpRes]=await Promise.all([
+    db.from('team_members').select('*').order('position'),
+    db.from('tasks').select('*').order('position'),
+    db.from('subtasks').select('*').order('position'),
+    db.from('work_packages').select('*')
+  ]);
+  tms=(tmRes.data||[]).map(r=>({id:r.id,initials:r.initials,headerOpen:false}));
+  tasks=(taskRes.data||[]).map(r=>({id:r.id,tmId:r.tm_id,name:r.name,weight:r.weight,crit:r.criticality,wpId:r.wp_id,deadline:r.deadline||'',desc:r.description,done:r.done}));
+  subtasks=(subRes.data||[]).map(r=>({id:r.id,taskId:r.task_id,name:r.name,done:r.done}));
+  wps=(wpRes.data||[]).map(r=>({id:r.id,name:r.name}));
+  nextTMId=tms.length?Math.max(...tms.map(t=>t.id))+1:1;
+  nextTaskId=tasks.length?Math.max(...tasks.map(t=>t.id))+1:1;
+  nextSubId=subtasks.length?Math.max(...subtasks.map(s=>s.id))+1:1;
+  render();
+}
+loadAll();
 </script>
 </body>
 </html>
