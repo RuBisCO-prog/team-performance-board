@@ -7,9 +7,8 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600&display=swap" rel="stylesheet">
 <style>
-@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600&display=swap');
 *{box-sizing:border-box;margin:0;padding:0}
-body{font-family:'Outfit',sans-serif;background:var(--wb-bg,#f8f8f8);min-height:100vh}
+body{font-family:'Outfit',sans-serif;background:#f8f8f8;min-height:100vh}
 .wb-root{padding:2rem 0 3rem;text-align:center}
 .wb-heading{font-size:28px;font-weight:300;color:#111;letter-spacing:-.02em;margin-bottom:1.8rem}
 .wb-heading span{font-weight:600}
@@ -116,13 +115,14 @@ body{font-family:'Outfit',sans-serif;background:var(--wb-bg,#f8f8f8);min-height:
 .inbox-del-btn:hover{color:#dc2626}
 .inbox-close-btn{font-size:12px;color:#555;background:#f5f5f5;border:0.5px solid #e0e0e0;cursor:pointer;font-family:inherit;padding:6px 16px;border-radius:20px;transition:all .15s}
 .inbox-close-btn:hover{color:#111}
+.loading{text-align:center;padding:60px;font-size:13px;color:#aaa;font-family:'Outfit',sans-serif}
 </style>
 </head>
 <body>
 <div class="wb-root">
   <div class="wb-heading">Work<span>load</span></div>
   <div class="scroll-wrap">
-    <div class="cards-row" id="cards"></div>
+    <div class="cards-row" id="cards"><div class="loading">Loading&hellip;</div></div>
   </div>
   <div class="add-tm-area">
     <button class="add-tm-btn" onclick="addTM()">+ Add team member</button>
@@ -139,8 +139,8 @@ const db=supabase.createClient(SUPA_URL,SUPA_KEY);
 
 let tms=[],tasks=[],subtasks=[],wps=[];
 let openTaskId=null,openDotMenu=null,showCopyMenu=false,pendingTaskId=null;
-let nextTMId=5,nextTaskId=1,nextSubId=1;
 let dragTaskId=null,subDragging=null,dragCardId=null,dragOverCardId=null;
+const saveTimers={},subTimers={};
 
 function isOverdue(dl){if(!dl)return false;return new Date(dl)<new Date(new Date().toDateString());}
 function wVal(t){return t.weight===''||t.weight==null?0:+t.weight;}
@@ -169,45 +169,45 @@ function render(){
     const myTasks=sortedTasks(tm.id),score=loadScore(tm.id),col=loadColor(score),pct=loadPct(score);
     const isDot=openDotMenu===tm.id;
     return'<div class="tm-card'+(dragCardId===tm.id?' card-dragging':'')+(dragOverCardId===tm.id?' card-drag-over':'')+'" id="card-'+tm.id+'" draggable="true" ondragstart="cardDragStart(event,'+tm.id+')" ondragend="cardDragEnd()" ondragover="cardDragOver(event,'+tm.id+')" ondragleave="cardDragLeave(event,'+tm.id+')" ondrop="cardDrop(event,'+tm.id+')">'+
-      '<div class="card-inner">'+
-      '<div class="card-header">'+
-      '<div class="avatar" id="av-'+tm.id+'" title="Drag to reorder">'+tm.initials.substring(0,4)+'</div>'+
-      '<div class="load-bar-wrap">'+
-      '<div class="load-bar-bg"><div class="load-bar-fill" style="width:'+pct+'%;background:'+col+'"></div></div>'+
-      '<div class="load-label" style="color:'+col+'">'+score+'</div>'+
-      '</div>'+
-      '<button class="three-dot-btn" onclick="toggleDotMenu(event,'+tm.id+')" aria-label="Options">\u00b7\u00b7\u00b7</button>'+
-      (isDot?'<div class="dot-menu" onclick="event.stopPropagation()">'+
-        '<div class="dot-menu-item" onclick="openHeaderEdit('+tm.id+')">&#9998; Edit member</div>'+
-        '<div class="dot-menu-item" onclick="copyTM('+tm.id+')">&#10697; Copy member</div>'+
-        '<div class="dot-menu-divider"></div>'+
-        '<div class="dot-menu-item danger" onclick="removeTM('+tm.id+')">&#128465; Remove member</div>'+
-      '</div>':'')+
-      '</div>'+
-      '<div class="header-edit'+(tm.headerOpen?' open':'')+'" id="hedit-'+tm.id+'">'+
-        '<div class="edit-field"><div class="edit-label-sm">Initials</div>'+
-        '<input class="edit-input" value="'+tm.initials+'" maxlength="4" placeholder="e.g. TM1" oninput="updateTM('+tm.id+',\'initials\',this.value)"></div>'+
-      '</div>'+
-      '<div class="tasks-wrap" id="tasks-'+tm.id+'">'+
-      '<div class="drop-zone" id="dz-'+tm.id+'-top" ondragover="dzOver(event,\''+tm.id+'-top\')" ondragleave="dzLeave(\''+tm.id+'-top\')" ondrop="dzDrop(event,'+tm.id+',0)"></div>'+
-      myTasks.map((t,i)=>{
-        const over=isOverdue(t.deadline),wS=weightBadgeStyle(wVal(t)),wp=wpName(t.wpId);
-        return '<div class="outbox" id="out-'+t.id+'" draggable="true" ondragstart="taskDragStart(event,'+t.id+')" ondragend="taskDragEnd()" onclick="openInbox('+t.id+')">'+
-          '<span style="font-size:13px;color:#ccc;cursor:grab;flex-shrink:0;opacity:0;transition:opacity .15s" class="drag-handle">\u2630</span>'+
-          '<div class="out-done-btn'+(t.done?' done':'')+'" onclick="event.stopPropagation();toggleDone('+t.id+')">'+(t.done?'&#10003;':'')+'</div>'+
-          '<div class="out-text">'+
-          '<span class="out-name'+(t.done?' done-text':'')+'">'+t.name+'</span>'+
-          (wp?'<span class="out-wp">'+wp+'</span>':'')+
-          '</div>'+
-          '<div class="out-badges">'+
-          '<span class="badge-w" style="'+wS+'">W'+wVal(t)+'</span>'+
-          (t.crit!==''&&t.crit!=null?'<span class="badge">C'+t.crit+'</span>':'')+
-          (t.deadline?'<span class="badge'+(over?' over':'')+'">&#128197; '+fmt(t.deadline)+'</span>':'')+
-          '</div></div>'+
-          '<div class="drop-zone" id="dz-'+tm.id+'-'+(i+1)+'" ondragover="dzOver(event,\''+tm.id+'-'+(i+1)+'\')" ondragleave="dzLeave(\''+tm.id+'-'+(i+1)+'\')" ondrop="dzDrop(event,'+tm.id+','+(i+1)+')"></div>';
-      }).join('')+
-      '<button class="add-task-btn" onclick="startAddTask('+tm.id+')">+ Add task</button>'+
-      '</div></div></div>';
+    '<div class="card-inner">'+
+    '<div class="card-header">'+
+    '<div class="avatar" id="av-'+tm.id+'" title="Drag to reorder">'+tm.initials.substring(0,4)+'</div>'+
+    '<div class="load-bar-wrap">'+
+    '<div class="load-bar-bg"><div class="load-bar-fill" style="width:'+pct+'%;background:'+col+'"></div></div>'+
+    '<div class="load-label" style="color:'+col+'">'+score+'</div>'+
+    '</div>'+
+    '<button class="three-dot-btn" onclick="toggleDotMenu(event,'+tm.id+')" aria-label="Options">\u00b7\u00b7\u00b7</button>'+
+    (isDot?'<div class="dot-menu" onclick="event.stopPropagation()">'+
+      '<div class="dot-menu-item" onclick="openHeaderEdit('+tm.id+')">&#9998; Edit member</div>'+
+      '<div class="dot-menu-item" onclick="copyTM('+tm.id+')">&#10697; Copy member</div>'+
+      '<div class="dot-menu-divider"></div>'+
+      '<div class="dot-menu-item danger" onclick="removeTM('+tm.id+')">&#128465; Remove member</div>'+
+    '</div>':'')+
+    '</div>'+
+    '<div class="header-edit'+(tm.headerOpen?' open':'')+'" id="hedit-'+tm.id+'">'+
+    '<div class="edit-field"><div class="edit-label-sm">Initials</div>'+
+    '<input class="edit-input" value="'+tm.initials+'" maxlength="4" placeholder="e.g. TM1" oninput="updateTM('+tm.id+',\'initials\',this.value)"></div>'+
+    '</div>'+
+    '<div class="tasks-wrap" id="tasks-'+tm.id+'">'+
+    '<div class="drop-zone" id="dz-'+tm.id+'-top" ondragover="dzOver(event,\''+tm.id+'-top\')" ondragleave="dzLeave(\''+tm.id+'-top\')" ondrop="dzDrop(event,'+tm.id+',0)"></div>'+
+    myTasks.map((t,i)=>{
+      const over=isOverdue(t.deadline),wS=weightBadgeStyle(wVal(t)),wp=wpName(t.wpId);
+      return '<div class="outbox" id="out-'+t.id+'" draggable="true" ondragstart="taskDragStart(event,'+t.id+')" ondragend="taskDragEnd()" onclick="openInbox('+t.id+')">'+
+        '<span style="font-size:13px;color:#ccc;cursor:grab;flex-shrink:0;opacity:0;transition:opacity .15s" class="drag-handle">\u2630</span>'+
+        '<div class="out-done-btn'+(t.done?' done':'')+'" onclick="event.stopPropagation();toggleDone('+t.id+')">'+(t.done?'&#10003;':'')+'</div>'+
+        '<div class="out-text">'+
+        '<span class="out-name'+(t.done?' done-text':'')+'">'+t.name+'</span>'+
+        (wp?'<span class="out-wp">'+wp+'</span>':'')+
+        '</div>'+
+        '<div class="out-badges">'+
+        '<span class="badge-w" style="'+wS+'">W'+wVal(t)+'</span>'+
+        (t.crit!==''&&t.crit!=null?'<span class="badge">C'+t.crit+'</span>':'')+
+        (t.deadline?'<span class="badge'+(over?' over':'')+'">&#128197; '+fmt(t.deadline)+'</span>':'')+
+        '</div></div>'+
+        '<div class="drop-zone" id="dz-'+tm.id+'-'+(i+1)+'" ondragover="dzOver(event,\''+tm.id+'-'+(i+1)+'\')" ondragleave="dzLeave(\''+tm.id+'-'+(i+1)+'\')" ondrop="dzDrop(event,'+tm.id+','+(i+1)+')"></div>';
+    }).join('')+
+    '<button class="add-task-btn" onclick="startAddTask('+tm.id+')">+ Add task</button>'+
+    '</div></div></div>';
   }).join('');
 }
 
@@ -240,7 +240,7 @@ function renderInbox(taskId){
     '<div class="inbox-field"><div class="inbox-field-label">Deadline</div><input type="date" class="inbox-date'+(over?' over':'')+'" value="'+(t.deadline||'')+'" oninput="updateTask('+t.id+',\'deadline\',this.value);renderInbox('+t.id+')"></div>'+
     '</div></div>'+
     '<div class="inbox-section"><div class="inbox-section-label">Description</div>'+
-    '<textarea class="inbox-desc" placeholder="Add notes\u2026" oninput="updateTask('+t.id+',\'desc\',this.value)">'+( t.desc||'')+'</textarea></div>'+
+    '<textarea class="inbox-desc" placeholder="Add notes\u2026" oninput="updateTask('+t.id+',\'desc\',this.value)">'+(t.desc||'')+'</textarea></div>'+
     '<div class="inbox-section"><div class="inbox-section-label">Subtasks</div><div id="subtasks-list">'+
     subs.map(s=>'<div class="subtask-row" id="sub-'+s.id+'" draggable="true" ondragstart="subDragStart(event,'+s.id+')" ondragover="subDragOver(event,'+s.id+')" ondragleave="subDragLeave('+s.id+')" ondragend="subDragEnd()" ondrop="subDrop(event,'+s.id+')">'+
       '<span style="font-size:13px;color:#ccc;cursor:grab;opacity:0;transition:opacity .15s;flex-shrink:0" class="sub-drag-handle">\u2630</span>'+
@@ -257,42 +257,147 @@ function renderInbox(taskId){
 }
 
 function autoResize(el){el.style.height='auto';el.style.height=el.scrollHeight+'px';}
+
 function openInbox(taskId){openTaskId=taskId;showCopyMenu=false;document.getElementById('inbox-overlay').classList.add('open');renderInbox(taskId);}
-function closeInbox(){
-  if(pendingTaskId){const t=tasks.find(t=>t.id===pendingTaskId);if(t&&!t.name.trim())tasks=tasks.filter(t=>t.id!==pendingTaskId);pendingTaskId=null;}
-  openTaskId=null;showCopyMenu=false;document.getElementById('inbox-overlay').classList.remove('open');render();
+
+async function closeInbox(){
+  if(pendingTaskId){
+    const t=tasks.find(t=>t.id===pendingTaskId);
+    if(t&&!t.name.trim()){
+      await db.from('tasks').delete().eq('id',pendingTaskId);
+      tasks=tasks.filter(t=>t.id!==pendingTaskId);
+    }
+    pendingTaskId=null;
+  }
+  openTaskId=null;showCopyMenu=false;
+  document.getElementById('inbox-overlay').classList.remove('open');
+  render();
 }
+
 function handleOverlayClick(e){if(e.target===document.getElementById('inbox-overlay'))closeInbox();}
 function toggleCopyMenu(){showCopyMenu=!showCopyMenu;renderInbox(openTaskId);}
-function copyTaskTo(taskId,toTmId){
+
+async function copyTaskTo(taskId,toTmId){
   const t=tasks.find(t=>t.id===taskId);if(!t)return;
-  const nid=nextTaskId++;tasks.push(Object.assign({},t,{id:nid,tmId:toTmId}));
-  subtasks.filter(s=>s.taskId===taskId).forEach(s=>subtasks.push(Object.assign({},s,{id:nextSubId++,taskId:nid})));
+  const {data,error}=await db.from('tasks').insert({tm_id:toTmId,name:t.name,weight:t.weight,criticality:t.crit,wp_id:t.wpId||null,deadline:t.deadline||null,description:t.desc,done:false,position:tasks.filter(x=>x.tmId===toTmId).length}).select().single();
+  if(error){console.error(error);return;}
+  tasks.push({id:data.id,tmId:toTmId,name:t.name,weight:t.weight,crit:t.crit,wpId:t.wpId,deadline:t.deadline,desc:t.desc,done:false});
+  const mySubs=subtasks.filter(s=>s.taskId===taskId);
+  for(const s of mySubs){
+    const {data:sd}=await db.from('subtasks').insert({task_id:data.id,name:s.name,done:false,position:0}).select().single();
+    if(sd)subtasks.push({id:sd.id,taskId:data.id,name:s.name,done:false});
+  }
   showCopyMenu=false;renderInbox(openTaskId);render();
 }
+
 function toggleDotMenu(e,tmId){e.stopPropagation();openDotMenu=openDotMenu===tmId?null:tmId;render();}
 function openHeaderEdit(tmId){openDotMenu=null;const tm=tms.find(t=>t.id===tmId);if(tm){tm.headerOpen=true;render();setTimeout(()=>{const el=document.querySelector('#hedit-'+tmId+' .edit-input');if(el)el.focus();},30);}}
-function copyTM(tmId){
+
+async function copyTM(tmId){
   const tm=tms.find(t=>t.id===tmId);if(!tm)return;
-  const nid=nextTMId++;tms.push(Object.assign({},tm,{id:nid,initials:tm.initials+'*',headerOpen:false}));
-  tasks.filter(t=>t.tmId===tmId).forEach(t=>{const tid=nextTaskId++;tasks.push(Object.assign({},t,{id:tid,tmId:nid}));subtasks.filter(s=>s.taskId===t.id).forEach(s=>subtasks.push(Object.assign({},s,{id:nextSubId++,taskId:tid})));});
+  const {data,error}=await db.from('team_members').insert({initials:tm.initials+'*',position:tms.length}).select().single();
+  if(error){console.error(error);return;}
+  tms.push({id:data.id,initials:data.initials,headerOpen:false});
+  const myTasks=tasks.filter(t=>t.tmId===tmId);
+  for(const t of myTasks){
+    const {data:td}=await db.from('tasks').insert({tm_id:data.id,name:t.name,weight:t.weight,criticality:t.crit,wp_id:t.wpId||null,deadline:t.deadline||null,description:t.desc,done:false,position:0}).select().single();
+    if(td){
+      tasks.push({id:td.id,tmId:data.id,name:t.name,weight:t.weight,crit:t.crit,wpId:t.wpId,deadline:t.deadline,desc:t.desc,done:false});
+      for(const s of subtasks.filter(s=>s.taskId===t.id)){
+        const {data:sd}=await db.from('subtasks').insert({task_id:td.id,name:s.name,done:false,position:0}).select().single();
+        if(sd)subtasks.push({id:sd.id,taskId:td.id,name:s.name,done:false});
+      }
+    }
+  }
   openDotMenu=null;render();
 }
-function removeTM(id){if(tms.length<=1)return;tms=tms.filter(t=>t.id!==id);tasks=tasks.filter(t=>t.tmId!==id);openDotMenu=null;render();}
-function updateTM(id,field,val){const t=tms.find(t=>t.id===id);if(!t)return;t[field]=val;const av=document.getElementById('av-'+id);if(av)av.textContent=val.substring(0,4);}
-function updateTask(id,field,val){const t=tasks.find(t=>t.id===id);if(t)t[field]=val;}
-function toggleDone(id){const t=tasks.find(t=>t.id===id);if(t){t.done=!t.done;render();if(openTaskId===id)renderInbox(id);}}
-function deleteTask(id){tasks=tasks.filter(t=>t.id!==id);subtasks=subtasks.filter(s=>s.taskId!==id);pendingTaskId=null;closeInbox();}
-function startAddTask(tmId){
-  const id=nextTaskId++;pendingTaskId=id;
-  tasks.push({id,tmId,name:'',weight:5,crit:5,wpId:'',deadline:'',desc:'',done:false});
-  render();setTimeout(()=>{openTaskId=id;showCopyMenu=false;document.getElementById('inbox-overlay').classList.add('open');renderInbox(id);setTimeout(()=>{const el=document.querySelector('.inbox-name');if(el)el.focus();},30);},20);
+
+async function removeTM(id){
+  if(tms.length<=1)return;
+  await db.from('team_members').delete().eq('id',id);
+  tms=tms.filter(t=>t.id!==id);tasks=tasks.filter(t=>t.tmId!==id);openDotMenu=null;render();
 }
-function addTM(){tms.push({id:nextTMId++,initials:'TM'+(nextTMId-1),headerOpen:false});render();setTimeout(()=>openHeaderEdit(tms[tms.length-1].id),30);}
-function addSub(taskId){const id=nextSubId++;subtasks.push({id,taskId,name:'',done:false});renderInbox(taskId);setTimeout(()=>{const inputs=document.querySelectorAll('.sub-input');if(inputs.length)inputs[inputs.length-1].focus();},30);}
-function updateSub(id,f,v){const s=subtasks.find(s=>s.id===id);if(s)s[f]=v;}
-function toggleSub(id){const s=subtasks.find(s=>s.id===id);if(s){s.done=!s.done;renderInbox(openTaskId);}}
-function deleteSub(id){const s=subtasks.find(s=>s.id===id);const tid=s&&s.taskId;subtasks=subtasks.filter(s=>s.id!==id);if(tid)renderInbox(tid);}
+
+function updateTM(id,field,val){
+  const t=tms.find(t=>t.id===id);if(!t)return;t[field]=val;
+  const av=document.getElementById('av-'+id);if(av)av.textContent=val.substring(0,4);
+  if(field==='initials')db.from('team_members').update({initials:val}).eq('id',id).then(()=>{});
+}
+
+function updateTask(id,field,val){
+  const t=tasks.find(t=>t.id===id);if(!t)return;t[field]=val;
+  clearTimeout(saveTimers[id]);
+  saveTimers[id]=setTimeout(()=>{
+    const map={name:'name',weight:'weight',crit:'criticality',wpId:'wp_id',deadline:'deadline',desc:'description',done:'done'};
+    const dbField=map[field];
+    if(dbField){
+      const dbVal=(field==='deadline'||field==='wpId')?(val||null):val;
+      db.from('tasks').update({[dbField]:dbVal}).eq('id',id).then(()=>{});
+    }
+  },600);
+}
+
+async function startAddTask(tmId){
+  const {data,error}=await db.from('tasks').insert({tm_id:tmId,name:'',weight:5,criticality:5,wp_id:null,deadline:null,description:'',done:false,position:tasks.filter(t=>t.tmId===tmId).length}).select().single();
+  if(error){console.error(error);return;}
+  tasks.push({id:data.id,tmId,name:'',weight:5,crit:5,wpId:'',deadline:'',desc:'',done:false});
+  pendingTaskId=data.id;
+  render();
+  setTimeout(()=>{
+    openTaskId=data.id;showCopyMenu=false;
+    document.getElementById('inbox-overlay').classList.add('open');
+    renderInbox(data.id);
+    setTimeout(()=>{const el=document.querySelector('.inbox-name');if(el)el.focus();},30);
+  },20);
+}
+
+async function deleteTask(id){
+  await db.from('tasks').delete().eq('id',id);
+  tasks=tasks.filter(t=>t.id!==id);subtasks=subtasks.filter(s=>s.taskId!==id);pendingTaskId=null;closeInbox();
+}
+
+async function toggleDone(id){
+  const t=tasks.find(t=>t.id===id);if(!t)return;t.done=!t.done;
+  await db.from('tasks').update({done:t.done}).eq('id',id);
+  render();if(openTaskId===id)renderInbox(id);
+}
+
+async function addTM(){
+  const initials='TM'+(tms.length+1);
+  const {data,error}=await db.from('team_members').insert({initials,position:tms.length}).select().single();
+  if(error){console.error(error);return;}
+  tms.push({id:data.id,initials:data.initials,headerOpen:false});
+  render();setTimeout(()=>openHeaderEdit(tms[tms.length-1].id),30);
+}
+
+async function addSub(taskId){
+  const {data,error}=await db.from('subtasks').insert({task_id:taskId,name:'',done:false,position:subtasks.filter(s=>s.taskId===taskId).length}).select().single();
+  if(error){console.error(error);return;}
+  subtasks.push({id:data.id,taskId,name:'',done:false});
+  renderInbox(taskId);setTimeout(()=>{const inputs=document.querySelectorAll('.sub-input');if(inputs.length)inputs[inputs.length-1].focus();},30);
+}
+
+function updateSub(id,f,v){
+  const s=subtasks.find(s=>s.id===id);if(!s)return;s[f]=v;
+  clearTimeout(subTimers[id]);
+  subTimers[id]=setTimeout(()=>{
+    const dbField={name:'name',done:'done'}[f];
+    if(dbField)db.from('subtasks').update({[dbField]:v}).eq('id',id).then(()=>{});
+  },600);
+}
+
+async function deleteSub(id){
+  const s=subtasks.find(s=>s.id===id);const tid=s&&s.taskId;
+  await db.from('subtasks').delete().eq('id',id);
+  subtasks=subtasks.filter(s=>s.id!==id);if(tid)renderInbox(tid);
+}
+
+async function toggleSub(id){
+  const s=subtasks.find(s=>s.id===id);if(!s)return;s.done=!s.done;
+  await db.from('subtasks').update({done:s.done}).eq('id',id);
+  renderInbox(openTaskId);
+}
+
 function taskDragStart(e,id){dragTaskId=id;e.dataTransfer.effectAllowed='move';e.stopPropagation();setTimeout(()=>{const el=document.getElementById('out-'+id);if(el)el.style.opacity='.4';},0);}
 function taskDragEnd(){if(dragTaskId){const el=document.getElementById('out-'+dragTaskId);if(el)el.style.opacity='1';}dragTaskId=null;document.querySelectorAll('.drop-zone').forEach(z=>z.classList.remove('active'));}
 function dzOver(e,key){if(dragTaskId===null)return;e.preventDefault();e.stopPropagation();const el=document.getElementById('dz-'+key);if(el)el.classList.add('active');}
@@ -302,7 +407,9 @@ function dzDrop(e,tmId,pos){
   const t=tasks.find(t=>t.id===dragTaskId);if(!t){dragTaskId=null;render();return;}
   tasks=tasks.filter(t=>t.id!==dragTaskId);
   const tmT=tasks.filter(t=>t.tmId===tmId),oth=tasks.filter(t=>t.tmId!==tmId);
-  tmT.splice(pos,0,Object.assign({},t,{tmId}));tasks=oth.concat(tmT);dragTaskId=null;render();
+  tmT.splice(pos,0,Object.assign({},t,{tmId}));tasks=oth.concat(tmT);
+  db.from('tasks').update({tm_id:tmId}).eq('id',t.id).then(()=>{});
+  dragTaskId=null;render();
 }
 function cardDragStart(e,tmId){
   if(dragTaskId!==null)return;
@@ -322,6 +429,7 @@ function cardDrop(e,tmId){
   if(dragCardId===tmId){dragCardId=null;dragOverCardId=null;render();return;}
   const fi=tms.findIndex(t=>t.id===dragCardId),ti=tms.findIndex(t=>t.id===tmId);
   if(fi>=0&&ti>=0){const m=tms.splice(fi,1)[0];tms.splice(ti,0,m);}
+  tms.forEach((t,i)=>db.from('team_members').update({position:i}).eq('id',t.id).then(()=>{}));
   dragCardId=null;dragOverCardId=null;render();
 }
 function subDragStart(e,id){subDragging=id;e.dataTransfer.effectAllowed='move';e.stopPropagation();setTimeout(()=>{const el=document.getElementById('sub-'+id);if(el)el.classList.add('dragging');},0);}
@@ -335,6 +443,7 @@ function subDrop(e,tid){
   if(fi<0||ti<0)return;const m=subs.splice(fi,1)[0];subs.splice(ti,0,m);
   subtasks=oth.concat(subs);subDragging=null;renderInbox(tkId);
 }
+
 document.addEventListener('click',function(e){
   if(openDotMenu&&!e.target.closest('.dot-menu')&&!e.target.closest('.three-dot-btn')){openDotMenu=null;render();}
   if(e.target.closest('.card-header')&&!e.target.closest('.three-dot-btn')&&!e.target.closest('.dot-menu')&&!e.target.closest('.header-edit')){
@@ -342,6 +451,7 @@ document.addEventListener('click',function(e){
     if(card){const id=+card.id.replace('card-','');const tm=tms.find(t=>t.id===id);if(tm&&tm.headerOpen&&!e.target.closest('.edit-input')){tm.headerOpen=false;render();}}
   }
 });
+
 async function loadAll(){
   const [tmRes,taskRes,subRes,wpRes]=await Promise.all([
     db.from('team_members').select('*').order('position'),
@@ -350,12 +460,9 @@ async function loadAll(){
     db.from('work_packages').select('*')
   ]);
   tms=(tmRes.data||[]).map(r=>({id:r.id,initials:r.initials,headerOpen:false}));
-  tasks=(taskRes.data||[]).map(r=>({id:r.id,tmId:r.tm_id,name:r.name,weight:r.weight,crit:r.criticality,wpId:r.wp_id,deadline:r.deadline||'',desc:r.description,done:r.done}));
-  subtasks=(subRes.data||[]).map(r=>({id:r.id,taskId:r.task_id,name:r.name,done:r.done}));
+  tasks=(taskRes.data||[]).map(r=>({id:r.id,tmId:r.tm_id,name:r.name||'',weight:r.weight,crit:r.criticality,wpId:r.wp_id||'',deadline:r.deadline||'',desc:r.description||'',done:r.done}));
+  subtasks=(subRes.data||[]).map(r=>({id:r.id,taskId:r.task_id,name:r.name||'',done:r.done}));
   wps=(wpRes.data||[]).map(r=>({id:r.id,name:r.name}));
-  nextTMId=tms.length?Math.max(...tms.map(t=>t.id))+1:1;
-  nextTaskId=tasks.length?Math.max(...tasks.map(t=>t.id))+1:1;
-  nextSubId=subtasks.length?Math.max(...subtasks.map(s=>s.id))+1:1;
   render();
 }
 loadAll();
