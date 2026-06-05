@@ -1,126 +1,130 @@
-
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Team Workload Board</title>
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600&display=swap" rel="stylesheet">
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600&display=swap');
 *{box-sizing:border-box;margin:0;padding:0}
-body{font-family:'Outfit',var(--font-sans),sans-serif}
+body{font-family:'Outfit',sans-serif;background:var(--wb-bg,#f8f8f8);min-height:100vh}
 .wb-root{padding:2rem 0 3rem;text-align:center}
-.wb-heading{font-size:28px;font-weight:300;color:var(--color-text-primary);letter-spacing:-.02em;margin-bottom:1.8rem}
+.wb-heading{font-size:28px;font-weight:300;color:#111;letter-spacing:-.02em;margin-bottom:1.8rem}
 .wb-heading span{font-weight:600}
-.scroll-wrap{overflow-x:auto;padding:0 1.5rem 1.5rem;scrollbar-width:thin;scrollbar-color:var(--color-border-secondary) transparent}
+.scroll-wrap{overflow-x:auto;padding:0 1.5rem 1.5rem;scrollbar-width:thin;scrollbar-color:#ccc transparent}
 .scroll-wrap::-webkit-scrollbar{height:4px}
-.scroll-wrap::-webkit-scrollbar-thumb{background:var(--color-border-secondary);border-radius:2px}
+.scroll-wrap::-webkit-scrollbar-thumb{background:#ccc;border-radius:2px}
 .cards-row{display:flex;gap:16px;align-items:flex-start;width:max-content;padding-bottom:4px}
-.tm-card{background:var(--color-background-primary);border:0.5px solid var(--color-border-tertiary);border-radius:16px;width:230px;transition:border-color .2s,box-shadow .2s;position:relative}
-.tm-card:hover{border-color:var(--color-border-secondary)}
-.tm-card.card-drag-over{border-color:var(--color-border-info);box-shadow:0 0 0 2px var(--color-background-info)}
+.tm-card{background:#fff;border:0.5px solid #e2e2e2;border-radius:16px;width:230px;transition:border-color .2s,box-shadow .2s;position:relative}
+.tm-card:hover{border-color:#bbb}
+.tm-card.card-drag-over{border-color:#6366f1;box-shadow:0 0 0 2px #e0e7ff}
 .tm-card.card-dragging{opacity:.4}
 .card-inner{border-radius:16px;overflow:hidden;background:transparent}
 .card-header{padding:20px 14px 14px;position:relative;user-select:none;text-align:center}
-.avatar{width:52px;height:52px;border-radius:50%;background:var(--color-background-info);color:var(--color-text-info);font-size:13px;font-weight:600;display:flex;align-items:center;justify-content:center;margin:0 auto 12px;letter-spacing:.02em;cursor:grab}
+.avatar{width:52px;height:52px;border-radius:50%;background:#e0e7ff;color:#4f46e5;font-size:13px;font-weight:600;display:flex;align-items:center;justify-content:center;margin:0 auto 12px;letter-spacing:.02em;cursor:grab}
 .avatar:active{cursor:grabbing}
 .load-bar-wrap{margin-top:4px}
-.load-bar-bg{height:4px;border-radius:2px;background:var(--color-border-tertiary);overflow:hidden}
+.load-bar-bg{height:4px;border-radius:2px;background:#f0f0f0;overflow:hidden}
 .load-bar-fill{height:100%;border-radius:2px;transition:width .4s,background .4s}
 .load-label{font-size:13px;margin-top:5px;font-weight:600;letter-spacing:.01em}
-.three-dot-btn{position:absolute;top:10px;right:10px;width:26px;height:26px;border-radius:7px;border:none;background:transparent;cursor:pointer;display:flex;align-items:center;justify-content:center;color:var(--color-text-tertiary);font-size:18px;transition:all .15s;z-index:2;line-height:1;letter-spacing:1px;padding-bottom:4px}
-.three-dot-btn:hover{background:var(--color-background-secondary);color:var(--color-text-primary)}
-.dot-menu{position:absolute;top:38px;right:10px;background:var(--color-background-primary);border:0.5px solid var(--color-border-secondary);border-radius:12px;padding:6px;z-index:100;min-width:170px;max-height:220px;overflow-y:auto;box-shadow:0 4px 20px rgba(0,0,0,.13)}
+.three-dot-btn{position:absolute;top:10px;right:10px;width:26px;height:26px;border-radius:7px;border:none;background:transparent;cursor:pointer;display:flex;align-items:center;justify-content:center;color:#aaa;font-size:18px;transition:all .15s;z-index:2;line-height:1;letter-spacing:1px;padding-bottom:4px}
+.three-dot-btn:hover{background:#f3f3f3;color:#333}
+.dot-menu{position:absolute;top:38px;right:10px;background:#fff;border:0.5px solid #e0e0e0;border-radius:12px;padding:6px;z-index:100;min-width:170px;max-height:220px;overflow-y:auto;box-shadow:0 4px 20px rgba(0,0,0,.1)}
 .dot-menu::-webkit-scrollbar{width:3px}
-.dot-menu::-webkit-scrollbar-thumb{background:var(--color-border-secondary);border-radius:2px}
-.dot-menu-item{display:flex;align-items:center;gap:8px;padding:7px 10px;border-radius:8px;font-size:12px;color:var(--color-text-primary);cursor:pointer;transition:background .15s;user-select:none;white-space:nowrap}
-.dot-menu-item:hover{background:var(--color-background-secondary)}
-.dot-menu-item.danger{color:var(--color-text-danger)}
-.dot-menu-item.danger:hover{background:var(--color-background-danger)}
-.dot-menu-divider{height:0.5px;background:var(--color-border-tertiary);margin:4px 0}
-.header-edit{display:none;padding:0 14px 12px;border-bottom:0.5px solid var(--color-border-tertiary)}
+.dot-menu::-webkit-scrollbar-thumb{background:#ddd;border-radius:2px}
+.dot-menu-item{display:flex;align-items:center;gap:8px;padding:7px 10px;border-radius:8px;font-size:12px;color:#222;cursor:pointer;transition:background .15s;user-select:none;white-space:nowrap}
+.dot-menu-item:hover{background:#f5f5f5}
+.dot-menu-item.danger{color:#dc2626}
+.dot-menu-item.danger:hover{background:#fef2f2}
+.dot-menu-divider{height:0.5px;background:#eee;margin:4px 0}
+.header-edit{display:none;padding:0 14px 12px;border-bottom:0.5px solid #eee}
 .header-edit.open{display:block}
 .edit-field{margin-bottom:8px}
-.edit-label-sm{font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--color-text-tertiary);margin-bottom:3px}
-.edit-input{width:100%;font-size:13px;padding:5px 8px;border-radius:8px;border:0.5px solid var(--color-border-secondary);background:var(--color-background-secondary);color:var(--color-text-primary);font-family:inherit;outline:none}
-.edit-input:focus{border-color:var(--color-border-primary)}
+.edit-label-sm{font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:#999;margin-bottom:3px}
+.edit-input{width:100%;font-size:13px;padding:5px 8px;border-radius:8px;border:0.5px solid #ddd;background:#fafafa;color:#111;font-family:inherit;outline:none}
+.edit-input:focus{border-color:#6366f1}
 .tasks-wrap{padding:8px 10px 4px}
-.outbox{display:flex;align-items:center;gap:7px;padding:6px 4px;border-bottom:0.5px solid var(--color-border-tertiary);cursor:pointer;border-radius:8px;transition:background .15s;user-select:none}
+.outbox{display:flex;align-items:center;gap:7px;padding:6px 4px;border-bottom:0.5px solid #f0f0f0;cursor:pointer;border-radius:8px;transition:background .15s;user-select:none}
 .outbox:last-child{border-bottom:none}
-.outbox:hover{background:var(--color-background-secondary)}
-.drag-handle{font-size:13px;color:var(--color-text-tertiary);cursor:grab;flex-shrink:0;opacity:0;transition:opacity .15s}
+.outbox:hover{background:#fafafa}
+.drag-handle{font-size:13px;color:#ccc;cursor:grab;flex-shrink:0;opacity:0;transition:opacity .15s}
 .outbox:hover .drag-handle{opacity:1}
-.out-done-btn{width:14px;height:14px;border-radius:50%;border:1px solid var(--color-border-secondary);background:transparent;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:9px;cursor:pointer;transition:all .15s}
-.out-done-btn.done{background:var(--color-background-success);border-color:var(--color-border-success);color:var(--color-text-success)}
+.out-done-btn{width:14px;height:14px;border-radius:50%;border:1px solid #ddd;background:transparent;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:9px;cursor:pointer;transition:all .15s}
+.out-done-btn.done{background:#22c55e;border-color:#22c55e;color:#fff}
 .out-text{flex:1;min-width:0;text-align:left}
-.out-name{font-size:12px;color:var(--color-text-primary);line-height:1.3;display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.out-name.done-text{text-decoration:line-through;color:var(--color-text-tertiary)}
-.out-wp{font-size:10px;color:var(--color-text-tertiary);display:block;margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.out-name{font-size:12px;color:#111;line-height:1.3;display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.out-name.done-text{text-decoration:line-through;color:#aaa}
+.out-wp{font-size:10px;color:#aaa;display:block;margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .out-badges{display:flex;gap:3px;flex-shrink:0;align-items:center}
-.badge{font-size:10px;padding:1px 6px;border-radius:20px;border:0.5px solid var(--color-border-tertiary);color:var(--color-text-secondary);background:var(--color-background-secondary);white-space:nowrap}
-.badge.over{border-color:var(--color-border-danger);color:var(--color-text-danger);background:var(--color-background-danger)}
+.badge{font-size:10px;padding:1px 6px;border-radius:20px;border:0.5px solid #e5e5e5;color:#666;background:#f5f5f5;white-space:nowrap}
+.badge.over{border-color:#fca5a5;color:#dc2626;background:#fef2f2}
 .badge-w{font-size:10px;padding:1px 7px;border-radius:20px;white-space:nowrap;font-weight:500;border:none}
 .drop-zone{min-height:6px;transition:all .2s;border-radius:8px}
-.drop-zone.active{background:var(--color-background-info);min-height:28px;border:1px dashed var(--color-border-info)}
-.card-drop-indicator{width:4px;border-radius:4px;background:var(--color-border-info);align-self:stretch;min-height:60px;display:none}
-.card-drop-indicator.show{display:block}
-.add-task-btn{display:flex;align-items:center;gap:5px;font-size:11px;color:var(--color-text-tertiary);cursor:pointer;padding:6px 10px;border-radius:8px;transition:all .15s;font-family:inherit;width:100%;border:none;background:transparent;text-align:left;margin-top:2px}
-.add-task-btn:hover{background:var(--color-background-secondary);color:var(--color-text-primary)}
+.drop-zone.active{background:#e0e7ff;min-height:28px;border:1px dashed #6366f1}
+.add-task-btn{display:flex;align-items:center;gap:5px;font-size:11px;color:#aaa;cursor:pointer;padding:6px 10px;border-radius:8px;transition:all .15s;font-family:inherit;width:100%;border:none;background:transparent;text-align:left;margin-top:2px}
+.add-task-btn:hover{background:#f5f5f5;color:#333}
 .add-tm-area{display:flex;justify-content:center;margin-top:16px}
-.add-tm-btn{font-size:11px;color:var(--color-text-tertiary);cursor:pointer;padding:8px 20px;border-radius:20px;border:0.5px dashed var(--color-border-secondary);background:transparent;font-family:inherit;transition:all .15s}
-.add-tm-btn:hover{background:var(--color-background-secondary);color:var(--color-text-primary);border-style:solid}
+.add-tm-btn{font-size:11px;color:#aaa;cursor:pointer;padding:8px 20px;border-radius:20px;border:0.5px dashed #ccc;background:transparent;font-family:inherit;transition:all .15s}
+.add-tm-btn:hover{background:#f5f5f5;color:#333;border-style:solid}
 .inbox-overlay{display:none;position:fixed;inset:0;z-index:999;background:rgba(0,0,0,.35)}
 .inbox-overlay.open{display:flex;align-items:center;justify-content:center}
-.inbox-card{background:var(--color-background-primary);border:0.5px solid var(--color-border-secondary);border-radius:20px;width:min(480px,92vw);max-height:85vh;overflow-y:auto;padding:24px;position:relative}
+.inbox-card{background:#fff;border:0.5px solid #e0e0e0;border-radius:20px;width:min(480px,92vw);max-height:85vh;overflow-y:auto;padding:24px;position:relative;box-shadow:0 8px 40px rgba(0,0,0,.12)}
 .inbox-card::-webkit-scrollbar{width:3px}
-.inbox-card::-webkit-scrollbar-thumb{background:var(--color-border-secondary);border-radius:2px}
+.inbox-card::-webkit-scrollbar-thumb{background:#ddd;border-radius:2px}
 .inbox-top{display:flex;align-items:flex-start;gap:10px;margin-bottom:16px}
-.inbox-done-btn{width:20px;height:20px;border-radius:50%;border:1.5px solid var(--color-border-secondary);background:transparent;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:11px;cursor:pointer;margin-top:2px;transition:all .15s}
-.inbox-done-btn.done{background:var(--color-background-success);border-color:var(--color-border-success);color:var(--color-text-success)}
-.inbox-name{font-size:18px;font-weight:600;color:var(--color-text-primary);border:none;background:transparent;outline:none;font-family:inherit;flex:1;line-height:1.3;resize:none;overflow:hidden}
-.inbox-name:focus{border-bottom:1px solid var(--color-border-secondary)}
+.inbox-done-btn{width:20px;height:20px;border-radius:50%;border:1.5px solid #ddd;background:transparent;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:11px;cursor:pointer;margin-top:2px;transition:all .15s}
+.inbox-done-btn.done{background:#22c55e;border-color:#22c55e;color:#fff}
+.inbox-name{font-size:18px;font-weight:600;color:#111;border:none;background:transparent;outline:none;font-family:inherit;flex:1;line-height:1.3;resize:none;overflow:hidden}
+.inbox-name:focus{border-bottom:1px solid #ddd}
 .inbox-top-actions{display:flex;gap:6px;flex-shrink:0;align-items:flex-start}
-.inbox-icon-btn{width:26px;height:26px;border-radius:8px;border:0.5px solid var(--color-border-tertiary);background:transparent;cursor:pointer;display:flex;align-items:center;justify-content:center;color:var(--color-text-tertiary);font-size:14px;transition:all .15s}
-.inbox-icon-btn:hover{background:var(--color-background-secondary);color:var(--color-text-primary)}
-.copy-tm-menu{background:var(--color-background-secondary);border:0.5px solid var(--color-border-secondary);border-radius:12px;padding:6px;margin-bottom:14px}
-.copy-tm-item{display:flex;align-items:center;gap:8px;padding:7px 10px;border-radius:8px;font-size:12px;color:var(--color-text-primary);cursor:pointer;transition:background .15s}
-.copy-tm-item:hover{background:var(--color-background-primary)}
+.inbox-icon-btn{width:26px;height:26px;border-radius:8px;border:0.5px solid #eee;background:transparent;cursor:pointer;display:flex;align-items:center;justify-content:center;color:#aaa;font-size:14px;transition:all .15s}
+.inbox-icon-btn:hover{background:#f5f5f5;color:#333}
+.copy-tm-menu{background:#f9f9f9;border:0.5px solid #e5e5e5;border-radius:12px;padding:6px;margin-bottom:14px}
+.copy-tm-item{display:flex;align-items:center;gap:8px;padding:7px 10px;border-radius:8px;font-size:12px;color:#222;cursor:pointer;transition:background .15s}
+.copy-tm-item:hover{background:#fff}
 .inbox-section{margin-bottom:16px}
-.inbox-section-label{font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--color-text-tertiary);margin-bottom:8px;font-weight:500}
+.inbox-section-label{font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:#aaa;margin-bottom:8px;font-weight:500}
 .inbox-fields-row{display:flex;gap:10px}
 .inbox-field{flex:1}
-.inbox-field-label{font-size:11px;color:var(--color-text-secondary);margin-bottom:4px}
-.inbox-num{width:100%;font-size:14px;padding:7px 10px;border-radius:10px;border:0.5px solid var(--color-border-secondary);background:var(--color-background-secondary);color:var(--color-text-primary);font-family:inherit;outline:none;text-align:center}
-.inbox-num:focus{border-color:var(--color-border-primary)}
-.inbox-date,.inbox-select{width:100%;font-size:13px;padding:7px 10px;border-radius:10px;border:0.5px solid var(--color-border-secondary);background:var(--color-background-secondary);color:var(--color-text-primary);font-family:inherit;outline:none}
-.inbox-date:focus,.inbox-select:focus{border-color:var(--color-border-primary)}
-.inbox-date.over{border-color:var(--color-border-danger);color:var(--color-text-danger);background:var(--color-background-danger)}
-.inbox-desc{width:100%;font-size:13px;padding:8px 10px;border-radius:10px;border:0.5px solid var(--color-border-secondary);background:var(--color-background-secondary);color:var(--color-text-primary);font-family:inherit;outline:none;resize:none;line-height:1.6;min-height:70px}
-.inbox-desc:focus{border-color:var(--color-border-primary)}
-.subtask-row{display:flex;align-items:center;gap:8px;padding:5px 2px;border-bottom:0.5px solid var(--color-border-tertiary)}
+.inbox-field-label{font-size:11px;color:#888;margin-bottom:4px}
+.inbox-num{width:100%;font-size:14px;padding:7px 10px;border-radius:10px;border:0.5px solid #e0e0e0;background:#fafafa;color:#111;font-family:inherit;outline:none;text-align:center}
+.inbox-num:focus{border-color:#6366f1}
+.inbox-date,.inbox-select{width:100%;font-size:13px;padding:7px 10px;border-radius:10px;border:0.5px solid #e0e0e0;background:#fafafa;color:#111;font-family:inherit;outline:none}
+.inbox-date:focus,.inbox-select:focus{border-color:#6366f1}
+.inbox-date.over{border-color:#fca5a5;color:#dc2626;background:#fef2f2}
+.inbox-desc{width:100%;font-size:13px;padding:8px 10px;border-radius:10px;border:0.5px solid #e0e0e0;background:#fafafa;color:#111;font-family:inherit;outline:none;resize:none;line-height:1.6;min-height:70px}
+.inbox-desc:focus{border-color:#6366f1}
+.subtask-row{display:flex;align-items:center;gap:8px;padding:5px 2px;border-bottom:0.5px solid #f0f0f0}
 .subtask-row:last-child{border-bottom:none}
 .subtask-row.dragging{opacity:.4}
-.subtask-row.sub-drag-over{border-top:2px solid var(--color-border-info)}
-.sub-drag-handle{font-size:13px;color:var(--color-text-tertiary);cursor:grab;opacity:0;transition:opacity .15s;flex-shrink:0}
+.subtask-row.sub-drag-over{border-top:2px solid #6366f1}
+.sub-drag-handle{font-size:13px;color:#ccc;cursor:grab;opacity:0;transition:opacity .15s;flex-shrink:0}
 .subtask-row:hover .sub-drag-handle{opacity:1}
-.sub-check{width:15px;height:15px;border-radius:4px;border:1px solid var(--color-border-secondary);background:transparent;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:10px;cursor:pointer;transition:all .15s}
-.sub-check.done{background:var(--color-background-success);border-color:var(--color-border-success);color:var(--color-text-success)}
-.sub-input{flex:1;font-size:13px;border:none;background:transparent;outline:none;font-family:inherit;color:var(--color-text-primary)}
-.sub-input.done-text{text-decoration:line-through;color:var(--color-text-tertiary)}
-.sub-del{font-size:14px;color:var(--color-text-tertiary);cursor:pointer;opacity:0;transition:opacity .15s;background:transparent;border:none;padding:0 2px;line-height:1}
+.sub-check{width:15px;height:15px;border-radius:4px;border:1px solid #ddd;background:transparent;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:10px;cursor:pointer;transition:all .15s}
+.sub-check.done{background:#22c55e;border-color:#22c55e;color:#fff}
+.sub-input{flex:1;font-size:13px;border:none;background:transparent;outline:none;font-family:inherit;color:#111}
+.sub-input.done-text{text-decoration:line-through;color:#aaa}
+.sub-del{font-size:14px;color:#ccc;cursor:pointer;opacity:0;transition:opacity .15s;background:transparent;border:none;padding:0 2px;line-height:1}
 .subtask-row:hover .sub-del{opacity:1}
-.sub-del:hover{color:var(--color-text-danger)}
-.add-sub-btn{display:flex;align-items:center;gap:5px;font-size:11px;color:var(--color-text-tertiary);cursor:pointer;padding:5px 0;background:transparent;border:none;font-family:inherit;transition:color .15s;margin-top:4px}
-.add-sub-btn:hover{color:var(--color-text-primary)}
-.inbox-actions{display:flex;justify-content:space-between;align-items:center;margin-top:20px;padding-top:16px;border-top:0.5px solid var(--color-border-tertiary)}
-.inbox-del-btn{font-size:12px;color:var(--color-text-tertiary);background:transparent;border:none;cursor:pointer;font-family:inherit;transition:color .15s;display:flex;align-items:center;gap:4px}
-.inbox-del-btn:hover{color:var(--color-text-danger)}
-.inbox-close-btn{font-size:12px;color:var(--color-text-secondary);background:var(--color-background-secondary);border:0.5px solid var(--color-border-secondary);cursor:pointer;font-family:inherit;padding:6px 16px;border-radius:20px;transition:all .15s}
-.inbox-close-btn:hover{color:var(--color-text-primary)}
+.sub-del:hover{color:#dc2626}
+.add-sub-btn{display:flex;align-items:center;gap:5px;font-size:11px;color:#aaa;cursor:pointer;padding:5px 0;background:transparent;border:none;font-family:inherit;transition:color .15s;margin-top:4px}
+.add-sub-btn:hover{color:#333}
+.inbox-actions{display:flex;justify-content:space-between;align-items:center;margin-top:20px;padding-top:16px;border-top:0.5px solid #eee}
+.inbox-del-btn{font-size:12px;color:#aaa;background:transparent;border:none;cursor:pointer;font-family:inherit;transition:color .15s;display:flex;align-items:center;gap:4px}
+.inbox-del-btn:hover{color:#dc2626}
+.inbox-close-btn{font-size:12px;color:#555;background:#f5f5f5;border:0.5px solid #e0e0e0;cursor:pointer;font-family:inherit;padding:6px 16px;border-radius:20px;transition:all .15s}
+.inbox-close-btn:hover{color:#111}
 </style>
-
-<h2 class="sr-only">Team workload board</h2>
+</head>
+<body>
 <div class="wb-root">
   <div class="wb-heading">Work<span>load</span></div>
   <div class="scroll-wrap">
     <div class="cards-row" id="cards"></div>
   </div>
   <div class="add-tm-area">
-    <button class="add-tm-btn" onclick="addTM()"><i class="ti ti-plus" aria-hidden="true"></i> Add team member</button>
+    <button class="add-tm-btn" onclick="addTM()">+ Add team member</button>
   </div>
 </div>
 <div class="inbox-overlay" id="inbox-overlay" onclick="handleOverlayClick(event)">
@@ -129,13 +133,17 @@ body{font-family:'Outfit',var(--font-sans),sans-serif}
 
 <script>
 let tms=[
-  {id:1,initials:'TM1'},{id:2,initials:'TM2'},{id:3,initials:'TM3'},{id:4,initials:'TM4'}
+  {id:1,initials:'TM1',headerOpen:false},
+  {id:2,initials:'TM2',headerOpen:false},
+  {id:3,initials:'TM3',headerOpen:false},
+  {id:4,initials:'TM4',headerOpen:false}
 ];
-let tasks=[],subtasks=[],wps=[{id:'wp1',name:'WP1'},{id:'wp2',name:'WP2'},{id:'wp3',name:'WP3'},{id:'wp4',name:'WP4'}];
+let tasks=[],subtasks=[],wps=[
+  {id:'wp1',name:'WP1'},{id:'wp2',name:'WP2'},{id:'wp3',name:'WP3'},{id:'wp4',name:'WP4'}
+];
 let openTaskId=null,openDotMenu=null,showCopyMenu=false,pendingTaskId=null;
 let nextTMId=5,nextTaskId=1,nextSubId=1;
-let dragTaskId=null,subDragging=null;
-let dragCardId=null,dragOverCardId=null;
+let dragTaskId=null,subDragging=null,dragCardId=null,dragOverCardId=null;
 
 function isOverdue(dl){if(!dl)return false;return new Date(dl)<new Date(new Date().toDateString());}
 function wVal(t){return t.weight===''||t.weight==null?0:+t.weight;}
@@ -146,7 +154,7 @@ function loadColor(s){
   if(s>=7)return'#e05020';
   if(s>=5)return'#d97706';
   if(s>=3)return'#ca8a04';
-  return'var(--color-text-success)';
+  return'#16a34a';
 }
 function loadPct(s){return Math.min(s/14*100,100);}
 function fmt(d){if(!d)return'';const p=d.split('-');return p.length!==3?d:p[2]+'/'+p[1];}
@@ -154,7 +162,7 @@ function sortedTasks(tmId){return tasks.filter(t=>t.tmId===tmId).sort((a,b)=>wVa
 function weightBadgeStyle(w){
   const v=Math.max(0,Math.min(10,+w||0)),t=v/10;
   const r=Math.round(34+t*190),g=Math.round(197-t*150),b=Math.round(94-t*60);
-  return`background:rgba(${r},${g},${b},.15);color:rgb(${r},${g},${b});border:0.5px solid rgba(${r},${g},${b},.4)`;
+  return'background:rgba('+r+','+g+','+b+',.15);color:rgb('+r+','+g+','+b+');border:0.5px solid rgba('+r+','+g+','+b+',.4)';
 }
 function wpName(wpId){const w=wps.find(w=>w.id===wpId);return w?w.name:'';}
 
@@ -163,59 +171,47 @@ function render(){
   wrap.innerHTML=tms.map(tm=>{
     const myTasks=sortedTasks(tm.id),score=loadScore(tm.id),col=loadColor(score),pct=loadPct(score);
     const isDot=openDotMenu===tm.id;
-    return`<div class="tm-card${dragCardId===tm.id?' card-dragging':''}${dragOverCardId===tm.id?' card-drag-over':''}"
-        id="card-${tm.id}"
-        draggable="true"
-        ondragstart="cardDragStart(event,${tm.id})"
-        ondragend="cardDragEnd()"
-        ondragover="cardDragOver(event,${tm.id})"
-        ondragleave="cardDragLeave(event,${tm.id})"
-        ondrop="cardDrop(event,${tm.id})">
-      <div class="card-inner">
-        <div class="card-header">
-          <div class="avatar" id="av-${tm.id}" title="Drag to reorder">${tm.initials.substring(0,4)}</div>
-          <div class="load-bar-wrap">
-            <div class="load-bar-bg"><div class="load-bar-fill" style="width:${pct}%;background:${col}"></div></div>
-            <div class="load-label" style="color:${col}">${score}</div>
-          </div>
-          <button class="three-dot-btn" onclick="toggleDotMenu(event,${tm.id})" aria-label="Options">···</button>
-          ${isDot?`<div class="dot-menu" onclick="event.stopPropagation()">
-            <div class="dot-menu-item" onclick="openHeaderEdit(${tm.id})"><i class="ti ti-pencil" style="font-size:14px" aria-hidden="true"></i> Edit member</div>
-            <div class="dot-menu-item" onclick="copyTM(${tm.id})"><i class="ti ti-copy" style="font-size:14px" aria-hidden="true"></i> Copy member</div>
-            <div class="dot-menu-divider"></div>
-            <div class="dot-menu-item danger" onclick="removeTM(${tm.id})"><i class="ti ti-trash" style="font-size:14px" aria-hidden="true"></i> Remove member</div>
-          </div>`:''}
-        </div>
-        <div class="header-edit${tm.headerOpen?' open':''}" id="hedit-${tm.id}">
-          <div class="edit-field">
-            <div class="edit-label-sm">Initials</div>
-            <input class="edit-input" value="${tm.initials}" maxlength="4" placeholder="e.g. TM1"
-              oninput="updateTM(${tm.id},'initials',this.value)">
-          </div>
-        </div>
-        <div class="tasks-wrap" id="tasks-${tm.id}">
-          <div class="drop-zone" id="dz-${tm.id}-top" ondragover="dzOver(event,'${tm.id}-top')" ondragleave="dzLeave('${tm.id}-top')" ondrop="dzDrop(event,${tm.id},0)"></div>
-          ${myTasks.map((t,i)=>{
-            const over=isOverdue(t.deadline),wS=weightBadgeStyle(wVal(t)),wp=wpName(t.wpId);
-            return`<div class="outbox" id="out-${t.id}" draggable="true"
-                ondragstart="taskDragStart(event,${t.id})" ondragend="taskDragEnd()" onclick="openInbox(${t.id})">
-              <i class="ti ti-grip-vertical drag-handle" aria-hidden="true"></i>
-              <div class="out-done-btn${t.done?' done':''}" onclick="event.stopPropagation();toggleDone(${t.id})">${t.done?'✓':''}</div>
-              <div class="out-text">
-                <span class="out-name${t.done?' done-text':''}">${t.name}</span>
-                ${wp?`<span class="out-wp">${wp}</span>`:''}
-              </div>
-              <div class="out-badges">
-                <span class="badge-w" style="${wS}">W${wVal(t)}</span>
-                ${t.crit!==''&&t.crit!=null?`<span class="badge">C${t.crit}</span>`:''}
-                ${t.deadline?`<span class="badge${over?' over':''}"><i class="ti ti-calendar" style="font-size:10px;vertical-align:-1px" aria-hidden="true"></i> ${fmt(t.deadline)}</span>`:''}
-              </div>
-            </div>
-            <div class="drop-zone" id="dz-${tm.id}-${i+1}" ondragover="dzOver(event,'${tm.id}-${i+1}')" ondragleave="dzLeave('${tm.id}-${i+1}')" ondrop="dzDrop(event,${tm.id},${i+1})"></div>`}).join('')}
-          <button class="add-task-btn" onclick="startAddTask(${tm.id})"><i class="ti ti-plus" aria-hidden="true"></i> Add task</button>
-        </div>
-      </div>
-    </div>`;}).join('');
+    return'<div class="tm-card'+(dragCardId===tm.id?' card-dragging':'')+(dragOverCardId===tm.id?' card-drag-over':'')+'" id="card-'+tm.id+'" draggable="true" ondragstart="cardDragStart(event,'+tm.id+')" ondragend="cardDragEnd()" ondragover="cardDragOver(event,'+tm.id+')" ondragleave="cardDragLeave(event,'+tm.id+')" ondrop="cardDrop(event,'+tm.id+')">'+
+      '<div class="card-inner">'+
+      '<div class="card-header">'+
+      '<div class="avatar" id="av-'+tm.id+'" title="Drag to reorder">'+tm.initials.substring(0,4)+'</div>'+
+      '<div class="load-bar-wrap">'+
+      '<div class="load-bar-bg"><div class="load-bar-fill" style="width:'+pct+'%;background:'+col+'"></div></div>'+
+      '<div class="load-label" style="color:'+col+'">'+score+'</div>'+
+      '</div>'+
+      '<button class="three-dot-btn" onclick="toggleDotMenu(event,'+tm.id+')" aria-label="Options">\u00b7\u00b7\u00b7</button>'+
+      (isDot?'<div class="dot-menu" onclick="event.stopPropagation()">'+
+        '<div class="dot-menu-item" onclick="openHeaderEdit('+tm.id+')">&#9998; Edit member</div>'+
+        '<div class="dot-menu-item" onclick="copyTM('+tm.id+')">&#10697; Copy member</div>'+
+        '<div class="dot-menu-divider"></div>'+
+        '<div class="dot-menu-item danger" onclick="removeTM('+tm.id+')">&#128465; Remove member</div>'+
+      '</div>':'')+
+      '</div>'+
+      '<div class="header-edit'+(tm.headerOpen?' open':'')+'" id="hedit-'+tm.id+'">'+
+        '<div class="edit-field"><div class="edit-label-sm">Initials</div>'+
+        '<input class="edit-input" value="'+tm.initials+'" maxlength="4" placeholder="e.g. TM1" oninput="updateTM('+tm.id+',\'initials\',this.value)"></div>'+
+      '</div>'+
+      '<div class="tasks-wrap" id="tasks-'+tm.id+'">'+
+      '<div class="drop-zone" id="dz-'+tm.id+'-top" ondragover="dzOver(event,\''+tm.id+'-top\')" ondragleave="dzLeave(\''+tm.id+'-top\')" ondrop="dzDrop(event,'+tm.id+',0)"></div>'+
+      myTasks.map((t,i)=>{
+        const over=isOverdue(t.deadline),wS=weightBadgeStyle(wVal(t)),wp=wpName(t.wpId);
+        return '<div class="outbox" id="out-'+t.id+'" draggable="true" ondragstart="taskDragStart(event,'+t.id+')" ondragend="taskDragEnd()" onclick="openInbox('+t.id+')">'+
+          '<span style="font-size:13px;color:#ccc;cursor:grab;flex-shrink:0;opacity:0;transition:opacity .15s" class="drag-handle">\u2630</span>'+
+          '<div class="out-done-btn'+(t.done?' done':'')+'" onclick="event.stopPropagation();toggleDone('+t.id+')">'+(t.done?'&#10003;':'')+'</div>'+
+          '<div class="out-text">'+
+          '<span class="out-name'+(t.done?' done-text':'')+'">'+t.name+'</span>'+
+          (wp?'<span class="out-wp">'+wp+'</span>':'')+
+          '</div>'+
+          '<div class="out-badges">'+
+          '<span class="badge-w" style="'+wS+'">W'+wVal(t)+'</span>'+
+          (t.crit!==''&&t.crit!=null?'<span class="badge">C'+t.crit+'</span>':'')+
+          (t.deadline?'<span class="badge'+(over?' over':'')+'">&#128197; '+fmt(t.deadline)+'</span>':'')+
+          '</div></div>'+
+          '<div class="drop-zone" id="dz-'+tm.id+'-'+(i+1)+'" ondragover="dzOver(event,\''+tm.id+'-'+(i+1)+'\')" ondragleave="dzLeave(\''+tm.id+'-'+(i+1)+'\')" ondrop="dzDrop(event,'+tm.id+','+(i+1)+')"></div>';
+      }).join('')+
+      '<button class="add-task-btn" onclick="startAddTask('+tm.id+')">+ Add task</button>'+
+      '</div></div></div>';
+  }).join('');
 }
 
 function renderInbox(taskId){
@@ -223,65 +219,43 @@ function renderInbox(taskId){
   if(!t){closeInbox();return;}
   const over=isOverdue(t.deadline),subs=subtasks.filter(s=>s.taskId===taskId);
   const wV=t.weight===''||t.weight==null?'':t.weight,cV=t.crit===''||t.crit==null?'':t.crit;
-  document.getElementById('inbox-card').innerHTML=`
-    <div>
-      <div class="inbox-top">
-        <div class="inbox-done-btn${t.done?' done':''}" onclick="toggleDone(${t.id});renderInbox(${t.id})">${t.done?'✓':''}</div>
-        <textarea class="inbox-name" rows="1" placeholder="Task name…" oninput="updateTask(${t.id},'name',this.value);autoResize(this)">${t.name}</textarea>
-        <div class="inbox-top-actions">
-          <button class="inbox-icon-btn" onclick="toggleCopyMenu()" aria-label="Copy task"><i class="ti ti-copy" style="font-size:13px" aria-hidden="true"></i></button>
-          <button class="inbox-icon-btn" onclick="closeInbox()" aria-label="Close"><i class="ti ti-x" style="font-size:13px" aria-hidden="true"></i></button>
-        </div>
-      </div>
-      ${showCopyMenu?`<div class="copy-tm-menu">
-        <div style="font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--color-text-tertiary);padding:4px 10px 6px">Copy to…</div>
-        ${tms.filter(m=>m.id!==t.tmId).map(m=>`<div class="copy-tm-item" onclick="copyTaskTo(${t.id},${m.id})">
-          <div style="width:22px;height:22px;border-radius:50%;background:var(--color-background-info);color:var(--color-text-info);font-size:10px;font-weight:600;display:flex;align-items:center;justify-content:center">${m.initials.substring(0,4)}</div>${m.initials}</div>`).join('')}
-      </div>`:''}
-    </div>
-    <div class="inbox-section">
-      <div class="inbox-section-label">Details</div>
-      <div class="inbox-fields-row" style="margin-bottom:10px">
-        <div class="inbox-field"><div class="inbox-field-label">Weight</div>
-          <input class="inbox-num" type="number" min="0" max="10" value="${wV}" placeholder="0–10"
-            onchange="updateTask(${t.id},'weight',this.value===''?'':Math.min(10,Math.max(0,+this.value)))"></div>
-        <div class="inbox-field"><div class="inbox-field-label">Criticality</div>
-          <input class="inbox-num" type="number" min="0" max="10" value="${cV}" placeholder="0–10"
-            onchange="updateTask(${t.id},'crit',this.value===''?'':Math.min(10,Math.max(0,+this.value)))"></div>
-      </div>
-      <div class="inbox-fields-row">
-        <div class="inbox-field"><div class="inbox-field-label">Work package</div>
-          <select class="inbox-select" onchange="updateTask(${t.id},'wpId',this.value)">
-            <option value="">None</option>
-            ${wps.map(w=>`<option value="${w.id}"${t.wpId===w.id?' selected':''}>${w.name}</option>`).join('')}
-          </select></div>
-        <div class="inbox-field"><div class="inbox-field-label">Deadline</div>
-          <input type="date" class="inbox-date${over?' over':''}" value="${t.deadline||''}"
-            oninput="updateTask(${t.id},'deadline',this.value);renderInbox(${t.id})"></div>
-      </div>
-    </div>
-    <div class="inbox-section">
-      <div class="inbox-section-label">Description</div>
-      <textarea class="inbox-desc" placeholder="Add notes…" oninput="updateTask(${t.id},'desc',this.value)">${t.desc||''}</textarea>
-    </div>
-    <div class="inbox-section">
-      <div class="inbox-section-label">Subtasks</div>
-      <div id="subtasks-list">
-        ${subs.map(s=>`<div class="subtask-row" id="sub-${s.id}" draggable="true"
-            ondragstart="subDragStart(event,${s.id})" ondragover="subDragOver(event,${s.id})"
-            ondragleave="subDragLeave(${s.id})" ondragend="subDragEnd()" ondrop="subDrop(event,${s.id})">
-          <i class="ti ti-grip-vertical sub-drag-handle" aria-hidden="true"></i>
-          <div class="sub-check${s.done?' done':''}" onclick="toggleSub(${s.id})">${s.done?'✓':''}</div>
-          <input class="sub-input${s.done?' done-text':''}" value="${s.name}" placeholder="Subtask…" oninput="updateSub(${s.id},'name',this.value)">
-          <button class="sub-del" onclick="deleteSub(${s.id})" aria-label="Delete">×</button>
-        </div>`).join('')}
-      </div>
-      <button class="add-sub-btn" onclick="addSub(${t.id})"><i class="ti ti-plus" aria-hidden="true"></i> Add subtask</button>
-    </div>
-    <div class="inbox-actions">
-      <button class="inbox-del-btn" onclick="deleteTask(${t.id})"><i class="ti ti-trash" style="font-size:12px" aria-hidden="true"></i> Delete task</button>
-      <button class="inbox-close-btn" onclick="closeInbox()">Close</button>
-    </div>`;
+  document.getElementById('inbox-card').innerHTML=
+    '<div><div class="inbox-top">'+
+    '<div class="inbox-done-btn'+(t.done?' done':'')+'" onclick="toggleDone('+t.id+');renderInbox('+t.id+')">'+(t.done?'&#10003;':'')+'</div>'+
+    '<textarea class="inbox-name" rows="1" placeholder="Task name\u2026" oninput="updateTask('+t.id+',\'name\',this.value);autoResize(this)">'+t.name+'</textarea>'+
+    '<div class="inbox-top-actions">'+
+    '<button class="inbox-icon-btn" onclick="toggleCopyMenu()" title="Copy task to\u2026">&#10697;</button>'+
+    '<button class="inbox-icon-btn" onclick="closeInbox()" title="Close">&times;</button>'+
+    '</div></div>'+
+    (showCopyMenu?'<div class="copy-tm-menu"><div style="font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:#aaa;padding:4px 10px 6px">Copy to\u2026</div>'+
+      tms.filter(m=>m.id!==t.tmId).map(m=>'<div class="copy-tm-item" onclick="copyTaskTo('+t.id+','+m.id+')">'+
+        '<div style="width:22px;height:22px;border-radius:50%;background:#e0e7ff;color:#4f46e5;font-size:10px;font-weight:600;display:flex;align-items:center;justify-content:center">'+m.initials.substring(0,4)+'</div>'+m.initials+'</div>').join('')+
+    '</div>':'')+
+    '</div>'+
+    '<div class="inbox-section"><div class="inbox-section-label">Details</div>'+
+    '<div class="inbox-fields-row" style="margin-bottom:10px">'+
+    '<div class="inbox-field"><div class="inbox-field-label">Weight</div><input class="inbox-num" type="number" min="0" max="10" value="'+wV+'" placeholder="0\u201310" onchange="updateTask('+t.id+',\'weight\',this.value===\'\'?\'\':Math.min(10,Math.max(0,+this.value)))"></div>'+
+    '<div class="inbox-field"><div class="inbox-field-label">Criticality</div><input class="inbox-num" type="number" min="0" max="10" value="'+cV+'" placeholder="0\u201310" onchange="updateTask('+t.id+',\'crit\',this.value===\'\'?\'\':Math.min(10,Math.max(0,+this.value)))"></div>'+
+    '</div>'+
+    '<div class="inbox-fields-row">'+
+    '<div class="inbox-field"><div class="inbox-field-label">Work package</div><select class="inbox-select" onchange="updateTask('+t.id+',\'wpId\',this.value)"><option value="">None</option>'+
+      wps.map(w=>'<option value="'+w.id+'"'+(t.wpId===w.id?' selected':'')+'>'+w.name+'</option>').join('')+'</select></div>'+
+    '<div class="inbox-field"><div class="inbox-field-label">Deadline</div><input type="date" class="inbox-date'+(over?' over':'')+'" value="'+(t.deadline||'')+'" oninput="updateTask('+t.id+',\'deadline\',this.value);renderInbox('+t.id+')"></div>'+
+    '</div></div>'+
+    '<div class="inbox-section"><div class="inbox-section-label">Description</div>'+
+    '<textarea class="inbox-desc" placeholder="Add notes\u2026" oninput="updateTask('+t.id+',\'desc\',this.value)">'+( t.desc||'')+'</textarea></div>'+
+    '<div class="inbox-section"><div class="inbox-section-label">Subtasks</div><div id="subtasks-list">'+
+    subs.map(s=>'<div class="subtask-row" id="sub-'+s.id+'" draggable="true" ondragstart="subDragStart(event,'+s.id+')" ondragover="subDragOver(event,'+s.id+')" ondragleave="subDragLeave('+s.id+')" ondragend="subDragEnd()" ondrop="subDrop(event,'+s.id+')">'+
+      '<span style="font-size:13px;color:#ccc;cursor:grab;opacity:0;transition:opacity .15s;flex-shrink:0" class="sub-drag-handle">\u2630</span>'+
+      '<div class="sub-check'+(s.done?' done':'')+'" onclick="toggleSub('+s.id+')">'+(s.done?'&#10003;':'')+'</div>'+
+      '<input class="sub-input'+(s.done?' done-text':'')+'" value="'+s.name+'" placeholder="Subtask\u2026" oninput="updateSub('+s.id+',\'name\',this.value)">'+
+      '<button class="sub-del" onclick="deleteSub('+s.id+')">&times;</button>'+
+    '</div>').join('')+
+    '</div><button class="add-sub-btn" onclick="addSub('+taskId+')">+ Add subtask</button></div>'+
+    '<div class="inbox-actions">'+
+    '<button class="inbox-del-btn" onclick="deleteTask('+t.id+')">&#128465; Delete task</button>'+
+    '<button class="inbox-close-btn" onclick="closeInbox()">Close</button>'+
+    '</div>';
   document.querySelectorAll('.inbox-name').forEach(autoResize);
 }
 
@@ -295,16 +269,16 @@ function handleOverlayClick(e){if(e.target===document.getElementById('inbox-over
 function toggleCopyMenu(){showCopyMenu=!showCopyMenu;renderInbox(openTaskId);}
 function copyTaskTo(taskId,toTmId){
   const t=tasks.find(t=>t.id===taskId);if(!t)return;
-  const nid=nextTaskId++;tasks.push({...t,id:nid,tmId:toTmId});
-  subtasks.filter(s=>s.taskId===taskId).forEach(s=>subtasks.push({...s,id:nextSubId++,taskId:nid}));
+  const nid=nextTaskId++;tasks.push(Object.assign({},t,{id:nid,tmId:toTmId}));
+  subtasks.filter(s=>s.taskId===taskId).forEach(s=>subtasks.push(Object.assign({},s,{id:nextSubId++,taskId:nid})));
   showCopyMenu=false;renderInbox(openTaskId);render();
 }
 function toggleDotMenu(e,tmId){e.stopPropagation();openDotMenu=openDotMenu===tmId?null:tmId;render();}
-function openHeaderEdit(tmId){openDotMenu=null;const tm=tms.find(t=>t.id===tmId);if(tm){tm.headerOpen=true;render();setTimeout(()=>{const el=document.querySelector(`#hedit-${tmId} .edit-input`);if(el)el.focus();},30);}}
+function openHeaderEdit(tmId){openDotMenu=null;const tm=tms.find(t=>t.id===tmId);if(tm){tm.headerOpen=true;render();setTimeout(()=>{const el=document.querySelector('#hedit-'+tmId+' .edit-input');if(el)el.focus();},30);}}
 function copyTM(tmId){
   const tm=tms.find(t=>t.id===tmId);if(!tm)return;
-  const nid=nextTMId++;tms.push({...tm,id:nid,initials:tm.initials+'*',headerOpen:false});
-  tasks.filter(t=>t.tmId===tmId).forEach(t=>{const tid=nextTaskId++;tasks.push({...t,id:tid,tmId:nid});subtasks.filter(s=>s.taskId===t.id).forEach(s=>subtasks.push({...s,id:nextSubId++,taskId:tid}));});
+  const nid=nextTMId++;tms.push(Object.assign({},tm,{id:nid,initials:tm.initials+'*',headerOpen:false}));
+  tasks.filter(t=>t.tmId===tmId).forEach(t=>{const tid=nextTaskId++;tasks.push(Object.assign({},t,{id:tid,tmId:nid}));subtasks.filter(s=>s.taskId===t.id).forEach(s=>subtasks.push(Object.assign({},s,{id:nextSubId++,taskId:tid})));});
   openDotMenu=null;render();
 }
 function removeTM(id){if(tms.length<=1)return;tms=tms.filter(t=>t.id!==id);tasks=tasks.filter(t=>t.tmId!==id);openDotMenu=null;render();}
@@ -321,8 +295,7 @@ function addTM(){tms.push({id:nextTMId++,initials:'TM'+(nextTMId-1),headerOpen:f
 function addSub(taskId){const id=nextSubId++;subtasks.push({id,taskId,name:'',done:false});renderInbox(taskId);setTimeout(()=>{const inputs=document.querySelectorAll('.sub-input');if(inputs.length)inputs[inputs.length-1].focus();},30);}
 function updateSub(id,f,v){const s=subtasks.find(s=>s.id===id);if(s)s[f]=v;}
 function toggleSub(id){const s=subtasks.find(s=>s.id===id);if(s){s.done=!s.done;renderInbox(openTaskId);}}
-function deleteSub(id){const s=subtasks.find(s=>s.id===id);const tid=s?.taskId;subtasks=subtasks.filter(s=>s.id!==id);if(tid)renderInbox(tid);}
-
+function deleteSub(id){const s=subtasks.find(s=>s.id===id);const tid=s&&s.taskId;subtasks=subtasks.filter(s=>s.id!==id);if(tid)renderInbox(tid);}
 function taskDragStart(e,id){dragTaskId=id;e.dataTransfer.effectAllowed='move';e.stopPropagation();setTimeout(()=>{const el=document.getElementById('out-'+id);if(el)el.style.opacity='.4';},0);}
 function taskDragEnd(){if(dragTaskId){const el=document.getElementById('out-'+dragTaskId);if(el)el.style.opacity='1';}dragTaskId=null;document.querySelectorAll('.drop-zone').forEach(z=>z.classList.remove('active'));}
 function dzOver(e,key){if(dragTaskId===null)return;e.preventDefault();e.stopPropagation();const el=document.getElementById('dz-'+key);if(el)el.classList.add('active');}
@@ -332,37 +305,28 @@ function dzDrop(e,tmId,pos){
   const t=tasks.find(t=>t.id===dragTaskId);if(!t){dragTaskId=null;render();return;}
   tasks=tasks.filter(t=>t.id!==dragTaskId);
   const tmT=tasks.filter(t=>t.tmId===tmId),oth=tasks.filter(t=>t.tmId!==tmId);
-  tmT.splice(pos,0,{...t,tmId});tasks=[...oth,...tmT];dragTaskId=null;render();
+  tmT.splice(pos,0,Object.assign({},t,{tmId}));tasks=oth.concat(tmT);dragTaskId=null;render();
 }
-
 function cardDragStart(e,tmId){
   if(dragTaskId!==null)return;
-  dragCardId=tmId;e.dataTransfer.effectAllowed='move';
-  e.dataTransfer.setData('text/card',String(tmId));
+  dragCardId=tmId;e.dataTransfer.effectAllowed='move';e.dataTransfer.setData('text/plain',String(tmId));
   setTimeout(()=>{const el=document.getElementById('card-'+tmId);if(el)el.classList.add('card-dragging');},0);
 }
-function cardDragEnd(){
-  dragCardId=null;dragOverCardId=null;
-  document.querySelectorAll('.tm-card').forEach(c=>c.classList.remove('card-dragging','card-drag-over'));
-}
+function cardDragEnd(){dragCardId=null;dragOverCardId=null;document.querySelectorAll('.tm-card').forEach(c=>c.classList.remove('card-dragging','card-drag-over'));}
 function cardDragOver(e,tmId){
   if(dragCardId===null||dragCardId===tmId||dragTaskId!==null)return;
   e.preventDefault();e.stopPropagation();
   if(dragOverCardId!==tmId){dragOverCardId=tmId;render();}
 }
-function cardDragLeave(e,tmId){
-  if(dragOverCardId===tmId){dragOverCardId=null;render();}
-}
+function cardDragLeave(e,tmId){if(dragOverCardId===tmId){dragOverCardId=null;render();}}
 function cardDrop(e,tmId){
   if(dragCardId===null||dragTaskId!==null)return;
   e.preventDefault();e.stopPropagation();
   if(dragCardId===tmId){dragCardId=null;dragOverCardId=null;render();return;}
   const fi=tms.findIndex(t=>t.id===dragCardId),ti=tms.findIndex(t=>t.id===tmId);
-  if(fi<0||ti<0){dragCardId=null;dragOverCardId=null;render();return;}
-  const[moved]=tms.splice(fi,1);tms.splice(ti,0,moved);
+  if(fi>=0&&ti>=0){const m=tms.splice(fi,1)[0];tms.splice(ti,0,m);}
   dragCardId=null;dragOverCardId=null;render();
 }
-
 function subDragStart(e,id){subDragging=id;e.dataTransfer.effectAllowed='move';e.stopPropagation();setTimeout(()=>{const el=document.getElementById('sub-'+id);if(el)el.classList.add('dragging');},0);}
 function subDragEnd(){subDragging=null;document.querySelectorAll('.subtask-row').forEach(r=>r.classList.remove('dragging','sub-drag-over'));}
 function subDragOver(e,id){e.preventDefault();e.stopPropagation();if(subDragging===id)return;const el=document.getElementById('sub-'+id);if(el)el.classList.add('sub-drag-over');}
@@ -371,17 +335,17 @@ function subDrop(e,tid){
   e.preventDefault();e.stopPropagation();if(subDragging===null||subDragging===tid)return;
   const tkId=openTaskId,subs=subtasks.filter(s=>s.taskId===tkId),oth=subtasks.filter(s=>s.taskId!==tkId);
   const fi=subs.findIndex(s=>s.id===subDragging),ti=subs.findIndex(s=>s.id===tid);
-  if(fi<0||ti<0)return;const[m]=subs.splice(fi,1);subs.splice(ti,0,m);
-  subtasks=[...oth,...subs];subDragging=null;renderInbox(tkId);
+  if(fi<0||ti<0)return;const m=subs.splice(fi,1)[0];subs.splice(ti,0,m);
+  subtasks=oth.concat(subs);subDragging=null;renderInbox(tkId);
 }
-
-document.addEventListener('click',e=>{
+document.addEventListener('click',function(e){
   if(openDotMenu&&!e.target.closest('.dot-menu')&&!e.target.closest('.three-dot-btn')){openDotMenu=null;render();}
   if(e.target.closest('.card-header')&&!e.target.closest('.three-dot-btn')&&!e.target.closest('.dot-menu')&&!e.target.closest('.header-edit')){
     const card=e.target.closest('.tm-card');
     if(card){const id=+card.id.replace('card-','');const tm=tms.find(t=>t.id===id);if(tm&&tm.headerOpen&&!e.target.closest('.edit-input')){tm.headerOpen=false;render();}}
   }
 });
-
 render();
 </script>
+</body>
+</html>
