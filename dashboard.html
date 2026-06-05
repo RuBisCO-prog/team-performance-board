@@ -134,9 +134,7 @@ body{font-family:'Outfit',sans-serif;background:#f8f8f8;min-height:100vh}
 </div>
 
 <script>
-const SUPA_URL='https://oqkpqdxjjkpmbabijvsf.supabase.co';
-const SUPA_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9xa3BxZHhqamtwbWJhYmlqdnNmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODA2NzMzNzIsImV4cCI6MjA5NjI0OTM3Mn0.VVYVzmoCLsDyV1Cea2WcorTNjyMw6zlw6AmlmUq0sZI';
-const db=supabase.createClient(SUPA_URL,SUPA_KEY);
+// db is defined in auth-guard.js
 
 let tms=[],tasks=[],subtasks=[],wps=[];
 let openTaskId=null,openDotMenu=null,showCopyMenu=false,pendingTaskId=null;
@@ -466,7 +464,7 @@ async function loadAll(){
   wps=(wpRes.data||[]).map(r=>({id:r.id,name:r.name}));
   render();
 }
-requireAuth().then(session=>{ if(session) loadAll(); });
+requireAuth().then(session=>{ if(session) loadAll(); else window.location.href='index.html'; });
 </script>
 </body>
 </html>
