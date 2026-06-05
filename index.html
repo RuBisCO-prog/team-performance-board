@@ -1,0 +1,1224 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Team Performance Board</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Syne:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #080810;
+    --bg2: #0d0d1a;
+    --bg3: #111124;
+    --card: rgba(15,15,35,0.85);
+    --card-border: rgba(80,60,180,0.25);
+    --purple: #6030d0;
+    --purple-light: #8050f0;
+    --purple-glow: rgba(96,48,208,0.3);
+    --blue: #1a40c8;
+    --blue-light: #2a5aee;
+    --blue-glow: rgba(26,64,200,0.3);
+    --accent: #7040e8;
+    --white: #f0f0ff;
+    --white2: rgba(240,240,255,0.65);
+    --white3: rgba(240,240,255,0.35);
+    --red: #e03060;
+    --green: #10c070;
+    --amber: #e0a020;
+    --mono: 'Space Mono', monospace;
+    --sans: 'Syne', sans-serif;
+    --transition: 0.55s cubic-bezier(0.4,0,0.2,1);
+  }
+  * { margin:0; padding:0; box-sizing:border-box; }
+  html, body { width:100%; height:100%; overflow:hidden; background:var(--bg); color:var(--white); font-family:var(--sans); }
+
+  /* ── LANDING ── */
+  #landing {
+    position:fixed; inset:0; z-index:100;
+    display:flex; flex-direction:column; align-items:center; justify-content:center;
+    background:radial-gradient(ellipse 80% 60% at 50% 40%, rgba(60,30,140,0.18) 0%, transparent 70%),
+               radial-gradient(ellipse 50% 40% at 70% 60%, rgba(20,40,160,0.12) 0%, transparent 60%),
+               var(--bg);
+    transition: opacity 0.7s ease, transform 0.7s ease;
+  }
+  #landing.exit { opacity:0; transform:scale(1.06); pointer-events:none; }
+  .landing-title {
+    font-family:var(--sans); font-size:clamp(1.6rem,3vw,2.4rem); font-weight:800;
+    letter-spacing:0.12em; text-transform:uppercase;
+    background:linear-gradient(135deg, var(--white) 0%, rgba(160,120,255,0.9) 60%, rgba(80,120,255,0.8) 100%);
+    -webkit-background-clip:text; -webkit-text-fill-color:transparent; background-clip:text;
+    margin-bottom:0.4rem;
+  }
+  .landing-sub {
+    font-family:var(--mono); font-size:0.7rem; letter-spacing:0.2em;
+    color:var(--white3); text-transform:uppercase; margin-bottom:3.5rem;
+  }
+  .globe-grid {
+    display:grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    grid-template-rows: auto auto;
+    gap:16px;
+    width: min(820px, 92vw);
+  }
+  .globe-card {
+    background:var(--card);
+    border:1px solid var(--card-border);
+    border-radius:16px;
+    padding:22px 20px 18px;
+    cursor:pointer;
+    position:relative;
+    overflow:hidden;
+    transition: transform 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease;
+    backdrop-filter:blur(12px);
+    animation: floatIn 0.7s ease both;
+  }
+  .globe-card:nth-child(1){animation-delay:0.05s}
+  .globe-card:nth-child(2){animation-delay:0.12s}
+  .globe-card:nth-child(3){animation-delay:0.19s}
+  .globe-card:nth-child(4){animation-delay:0.26s}
+  .globe-card:nth-child(5){animation-delay:0.33s}
+  @keyframes floatIn {
+    from { opacity:0; transform:translateY(24px) scale(0.97); }
+    to   { opacity:1; transform:none; }
+  }
+  .globe-card:hover {
+    transform:translateY(-4px) scale(1.02);
+    border-color:rgba(120,80,240,0.5);
+    box-shadow:0 8px 40px rgba(80,40,200,0.25);
+  }
+  .globe-card::before {
+    content:''; position:absolute; inset:0;
+    background:linear-gradient(135deg, rgba(90,50,200,0.07) 0%, transparent 60%);
+    pointer-events:none;
+  }
+  .globe-card-icon { font-size:1.6rem; margin-bottom:10px; }
+  .globe-card-title {
+    font-family:var(--sans); font-size:0.85rem; font-weight:700;
+    letter-spacing:0.08em; text-transform:uppercase; color:var(--white);
+    margin-bottom:5px;
+  }
+  .globe-card-desc { font-family:var(--mono); font-size:0.62rem; color:var(--white3); line-height:1.5; }
+  .globe-card-num {
+    position:absolute; top:14px; right:16px;
+    font-family:var(--mono); font-size:0.6rem; color:rgba(120,80,255,0.4);
+    letter-spacing:0.15em;
+  }
+  /* center the last 2 cards */
+  .globe-grid .globe-card:nth-child(4) { grid-column:1; }
+  .globe-grid .globe-card:nth-child(5) { grid-column:3; }
+  .globe-grid-bottom {
+    display:grid; grid-template-columns:1fr 1fr; gap:16px;
+    width: min(820px,92vw);
+  }
+
+  /* ── APP SHELL ── */
+  #app { position:fixed; inset:0; display:flex; flex-direction:column; }
+  
+  /* NAV */
+  #nav {
+    display:flex; align-items:center; gap:0;
+    padding:0 24px; height:52px; flex-shrink:0;
+    background:rgba(8,8,16,0.92); backdrop-filter:blur(16px);
+    border-bottom:1px solid var(--card-border);
+    z-index:50;
+  }
+  .nav-brand {
+    font-family:var(--sans); font-size:0.8rem; font-weight:700;
+    letter-spacing:0.14em; text-transform:uppercase;
+    color:var(--white); margin-right:32px; cursor:pointer;
+  }
+  .nav-tabs { display:flex; gap:2px; }
+  .nav-tab {
+    font-family:var(--mono); font-size:0.62rem; letter-spacing:0.1em;
+    text-transform:uppercase; color:var(--white3);
+    padding:6px 14px; border-radius:6px; cursor:pointer;
+    border:1px solid transparent;
+    transition:all 0.2s;
+  }
+  .nav-tab:hover { color:var(--white2); background:rgba(80,50,180,0.1); }
+  .nav-tab.active {
+    color:var(--white); background:rgba(90,50,200,0.2);
+    border-color:rgba(100,60,220,0.35);
+  }
+  .nav-spacer { flex:1; }
+  .nav-btn {
+    font-family:var(--mono); font-size:0.62rem; letter-spacing:0.1em;
+    text-transform:uppercase; padding:6px 14px; border-radius:6px; cursor:pointer;
+    border:1px solid rgba(100,60,220,0.4); color:var(--white2);
+    background:rgba(90,50,200,0.15); transition:all 0.2s;
+  }
+  .nav-btn:hover { background:rgba(90,50,200,0.3); color:var(--white); }
+
+  /* VIEWS CONTAINER */
+  #views {
+    flex:1; display:flex; overflow:hidden; position:relative;
+  }
+  .view {
+    min-width:100%; height:100%; overflow-y:auto;
+    padding:24px;
+    transition:transform var(--transition), opacity var(--transition);
+    scroll-behavior:smooth;
+  }
+  .view::-webkit-scrollbar { width:4px; }
+  .view::-webkit-scrollbar-track { background:transparent; }
+  .view::-webkit-scrollbar-thumb { background:rgba(100,60,200,0.3); border-radius:2px; }
+
+  /* ── GENERIC COMPONENTS ── */
+  .section-header {
+    display:flex; align-items:center; gap:12px;
+    margin-bottom:20px;
+  }
+  .section-title {
+    font-family:var(--sans); font-size:1.1rem; font-weight:700;
+    letter-spacing:0.08em; text-transform:uppercase; color:var(--white);
+  }
+  .section-badge {
+    font-family:var(--mono); font-size:0.6rem; padding:3px 9px;
+    border-radius:4px; background:rgba(90,50,200,0.2);
+    border:1px solid rgba(100,60,220,0.3); color:rgba(160,120,255,0.9);
+    letter-spacing:0.1em;
+  }
+
+  .card {
+    background:var(--card); border:1px solid var(--card-border);
+    border-radius:14px; padding:18px; backdrop-filter:blur(8px);
+    position:relative; overflow:hidden;
+  }
+  .card::before {
+    content:''; position:absolute; inset:0;
+    background:linear-gradient(135deg,rgba(90,50,200,0.04) 0%,transparent 60%);
+    pointer-events:none;
+  }
+
+  /* ── VIEW 0: MAIN / OVERVIEW ── */
+  #view-main .tm-grid {
+    display:grid;
+    grid-template-columns:repeat(auto-fill,minmax(200px,1fr));
+    gap:16px;
+  }
+  .tm-col {
+    background:var(--card); border:1px solid var(--card-border);
+    border-radius:14px; padding:16px; backdrop-filter:blur(8px);
+    transition:border-color 0.2s;
+  }
+  .tm-col:hover { border-color:rgba(120,80,255,0.4); }
+  .tm-col-header {
+    display:flex; align-items:center; gap:10px; margin-bottom:14px;
+    padding-bottom:12px; border-bottom:1px solid rgba(80,60,180,0.2);
+  }
+  .tm-avatar {
+    width:36px; height:36px; border-radius:50%;
+    background:linear-gradient(135deg,var(--purple),var(--blue));
+    display:flex; align-items:center; justify-content:center;
+    font-family:var(--mono); font-size:0.65rem; font-weight:700; color:var(--white);
+    flex-shrink:0;
+  }
+  .tm-name {
+    font-family:var(--sans); font-size:0.82rem; font-weight:700;
+    color:var(--white); letter-spacing:0.05em;
+  }
+  .tm-score-pill {
+    margin-left:auto; font-family:var(--mono); font-size:0.6rem;
+    padding:3px 8px; border-radius:20px;
+    background:rgba(90,50,200,0.2); border:1px solid rgba(100,60,220,0.3);
+    color:rgba(160,120,255,0.9);
+  }
+  .task-item {
+    display:flex; align-items:flex-start; gap:8px;
+    padding:7px 0; border-bottom:1px solid rgba(80,60,180,0.1);
+    cursor:pointer; transition:background 0.15s; border-radius:6px; padding:6px 6px;
+    margin:2px 0;
+  }
+  .task-item:hover { background:rgba(80,50,180,0.1); }
+  .task-item.completed { opacity:0.4; }
+  .task-item.completed .task-name { text-decoration:line-through; }
+  .task-weight-bar {
+    width:3px; border-radius:2px; flex-shrink:0; margin-top:3px;
+    align-self:stretch; min-height:12px;
+  }
+  .task-name { font-family:var(--mono); font-size:0.65rem; color:var(--white2); line-height:1.4; flex:1; }
+  .task-meta { display:flex; gap:4px; align-items:center; flex-shrink:0; }
+  .task-w { font-family:var(--mono); font-size:0.6rem; color:var(--white3); }
+  .task-crit {
+    font-family:var(--mono); font-size:0.55rem; padding:1px 5px; border-radius:3px;
+    background:rgba(80,50,180,0.2); color:rgba(140,100,255,0.8);
+  }
+  .task-done-btn {
+    width:14px; height:14px; border-radius:50%; flex-shrink:0; margin-top:2px;
+    border:1px solid rgba(100,70,220,0.4); background:transparent; cursor:pointer;
+    transition:all 0.2s; display:flex; align-items:center; justify-content:center;
+  }
+  .task-done-btn.done { background:var(--green); border-color:var(--green); }
+  .task-done-btn.done::after { content:'✓'; font-size:8px; color:#000; }
+  .tm-empty { font-family:var(--mono); font-size:0.62rem; color:var(--white3); text-align:center; padding:16px 0; }
+  .add-tm-btn, .add-wp-btn, .add-task-btn {
+    display:flex; align-items:center; gap:6px;
+    font-family:var(--mono); font-size:0.65rem; letter-spacing:0.08em;
+    color:rgba(140,100,255,0.8); cursor:pointer; padding:8px 10px; border-radius:8px;
+    border:1px dashed rgba(100,60,220,0.25); background:transparent;
+    transition:all 0.2s; text-transform:uppercase;
+  }
+  .add-tm-btn:hover, .add-wp-btn:hover, .add-task-btn:hover {
+    background:rgba(80,50,180,0.1); border-color:rgba(120,80,240,0.4); color:var(--white);
+  }
+
+  /* ── VIEW 1: WORK PACKAGES ── */
+  #view-wp .wp-grid {
+    display:grid;
+    grid-template-columns:repeat(auto-fill,minmax(320px,1fr));
+    gap:20px;
+    align-items:start;
+  }
+  .wp-card {
+    background:var(--card); border-radius:14px; backdrop-filter:blur(8px);
+    border:1.5px solid var(--card-border); overflow:hidden;
+    transition:border-color 0.2s;
+  }
+  .wp-card.status-red { border-color:rgba(220,48,96,0.5); }
+  .wp-card.status-green { border-color:rgba(16,192,112,0.45); }
+  .wp-header {
+    display:flex; align-items:center; gap:10px; padding:14px 16px;
+    border-bottom:1px solid rgba(80,60,180,0.15);
+  }
+  .wp-status-dot {
+    width:10px; height:10px; border-radius:50%; flex-shrink:0; cursor:pointer;
+    transition:all 0.2s; border:1.5px solid rgba(255,255,255,0.2);
+  }
+  .wp-status-dot.neutral { background:rgba(120,100,200,0.4); }
+  .wp-status-dot.red { background:var(--red); box-shadow:0 0 8px rgba(220,48,96,0.5); }
+  .wp-status-dot.green { background:var(--green); box-shadow:0 0 8px rgba(16,192,112,0.4); }
+  .wp-title {
+    font-family:var(--sans); font-size:0.88rem; font-weight:700;
+    color:var(--white); letter-spacing:0.05em; flex:1;
+  }
+  .wp-title[contenteditable=true]:focus { outline:none; border-bottom:1px solid rgba(120,80,255,0.5); }
+  .wp-remove-btn {
+    font-size:0.7rem; color:var(--white3); cursor:pointer; padding:2px 6px;
+    border-radius:4px; transition:all 0.2s;
+  }
+  .wp-remove-btn:hover { color:var(--red); background:rgba(220,48,96,0.1); }
+  .wp-tasks { padding:12px 16px; }
+  .wp-task-row {
+    display:grid; grid-template-columns:1fr 60px 60px 28px;
+    gap:6px; align-items:center; margin-bottom:8px;
+  }
+  .wp-task-input {
+    background:rgba(255,255,255,0.04); border:1px solid rgba(80,60,180,0.2);
+    border-radius:6px; padding:5px 8px; color:var(--white2);
+    font-family:var(--mono); font-size:0.62rem; outline:none;
+    transition:border-color 0.2s;
+  }
+  .wp-task-input:focus { border-color:rgba(120,80,255,0.5); }
+  .wp-num-input {
+    background:rgba(255,255,255,0.04); border:1px solid rgba(80,60,180,0.2);
+    border-radius:6px; padding:5px 6px; color:var(--white2);
+    font-family:var(--mono); font-size:0.62rem; outline:none; text-align:center;
+    transition:border-color 0.2s;
+  }
+  .wp-num-input:focus { border-color:rgba(120,80,255,0.5); }
+  .wp-assign-select {
+    background:rgba(255,255,255,0.04); border:1px solid rgba(80,60,180,0.2);
+    border-radius:6px; padding:5px 6px; color:var(--white2);
+    font-family:var(--mono); font-size:0.62rem; outline:none;
+    -webkit-appearance:none; text-align:center;
+  }
+  .wp-task-del { color:var(--white3); cursor:pointer; text-align:center; font-size:0.8rem; transition:color 0.2s; }
+  .wp-task-del:hover { color:var(--red); }
+  .wp-col-labels {
+    display:grid; grid-template-columns:1fr 60px 60px 28px;
+    gap:6px; margin-bottom:6px; padding:0 0 4px;
+    border-bottom:1px solid rgba(80,60,180,0.15);
+  }
+  .wp-col-label { font-family:var(--mono); font-size:0.55rem; color:var(--white3); letter-spacing:0.1em; text-transform:uppercase; }
+  .wp-footer { padding:8px 16px 14px; }
+
+  /* ── VIEW 2: LOAD ── */
+  #view-load .load-top3 {
+    display:flex; gap:12px; margin-bottom:24px;
+  }
+  .load-top-card {
+    flex:1; background:var(--card); border:1px solid var(--card-border);
+    border-radius:12px; padding:14px; text-align:center; backdrop-filter:blur(8px);
+  }
+  .load-top-rank { font-family:var(--mono); font-size:0.6rem; color:var(--white3); margin-bottom:4px; }
+  .load-top-name { font-family:var(--sans); font-size:1.1rem; font-weight:700; color:var(--white); }
+  .load-top-score { font-family:var(--mono); font-size:1.4rem; font-weight:700; }
+  .load-field {
+    background:var(--card); border:1px solid var(--card-border);
+    border-radius:14px; padding:24px; backdrop-filter:blur(8px);
+    position:relative; min-height:260px;
+    overflow:hidden;
+  }
+  .load-gradient {
+    position:absolute; bottom:0; left:24px; right:24px; height:6px;
+    border-radius:3px;
+    background:linear-gradient(90deg,var(--green),var(--amber),var(--red));
+    opacity:0.6;
+  }
+  .load-labels {
+    display:flex; justify-content:space-between;
+    font-family:var(--mono); font-size:0.55rem; color:var(--white3);
+    margin-bottom:16px; letter-spacing:0.1em;
+  }
+  .tm-bubble {
+    position:absolute; border-radius:50%;
+    display:flex; align-items:center; justify-content:center;
+    font-family:var(--mono); font-size:0.65rem; font-weight:700;
+    cursor:pointer; transition:all 0.5s cubic-bezier(0.4,0,0.2,1);
+    border:2px solid rgba(255,255,255,0.15);
+    user-select:none;
+  }
+
+  /* ── VIEW 3: COLLABORATION ── */
+  #view-collab { overflow:hidden !important; padding:0 !important; }
+  #collab-canvas { width:100%; height:100%; }
+  .collab-overlay {
+    position:absolute; top:24px; left:24px; right:24px;
+    pointer-events:none;
+  }
+
+  /* ── VIEW 4: PRIORITY ── */
+  #view-priority .priority-top {
+    display:grid; grid-template-columns:repeat(3,1fr); gap:16px; margin-bottom:28px;
+  }
+  .priority-card {
+    background:var(--card); border-radius:14px; padding:20px; backdrop-filter:blur(8px);
+    border:1px solid var(--card-border); position:relative; overflow:hidden;
+    cursor:pointer; transition:all 0.25s;
+  }
+  .priority-card:hover { transform:translateY(-2px); border-color:rgba(120,80,255,0.45); }
+  .priority-rank {
+    font-family:var(--mono); font-size:2.5rem; font-weight:700;
+    position:absolute; top:12px; right:16px; opacity:0.07; color:var(--white);
+  }
+  .priority-task-name {
+    font-family:var(--sans); font-size:0.95rem; font-weight:700;
+    color:var(--white); margin-bottom:8px; line-height:1.3;
+  }
+  .priority-meta { display:flex; flex-wrap:wrap; gap:6px; margin-bottom:12px; }
+  .priority-pill {
+    font-family:var(--mono); font-size:0.58rem; padding:3px 8px; border-radius:20px;
+    border:1px solid; letter-spacing:0.08em;
+  }
+  .priority-score-bar {
+    height:3px; border-radius:2px; margin-top:12px;
+    background:linear-gradient(90deg,var(--purple),var(--blue-light));
+  }
+  .priority-full-list { margin-top:8px; }
+  .priority-full-row {
+    display:grid; grid-template-columns:28px 1fr 80px 80px 80px 80px;
+    gap:8px; align-items:center; padding:10px 12px; border-radius:8px;
+    font-family:var(--mono); font-size:0.62rem; cursor:pointer;
+    border:1px solid transparent; transition:all 0.15s; margin-bottom:4px;
+  }
+  .priority-full-row:hover { background:rgba(80,50,180,0.1); border-color:rgba(100,60,220,0.2); }
+  .priority-full-row.header { color:var(--white3); font-size:0.58rem; letter-spacing:0.1em; text-transform:uppercase; cursor:default; }
+  .priority-full-row.header:hover { background:transparent; border-color:transparent; }
+
+  /* ── MODALS / OVERLAYS ── */
+  .modal-overlay {
+    position:fixed; inset:0; background:rgba(0,0,8,0.75); z-index:200;
+    display:flex; align-items:center; justify-content:center;
+    backdrop-filter:blur(4px); animation:fadeIn 0.2s ease;
+  }
+  @keyframes fadeIn { from { opacity:0; } to { opacity:1; } }
+  .modal {
+    background:#0e0e22; border:1px solid rgba(100,60,220,0.4);
+    border-radius:16px; padding:28px; width:min(460px,92vw);
+    animation:slideUp 0.3s cubic-bezier(0.4,0,0.2,1);
+  }
+  @keyframes slideUp { from { opacity:0; transform:translateY(20px); } to { opacity:1; transform:none; } }
+  .modal-title {
+    font-family:var(--sans); font-size:1rem; font-weight:700;
+    color:var(--white); margin-bottom:20px; letter-spacing:0.06em;
+  }
+  .modal-field { margin-bottom:14px; }
+  .modal-label {
+    font-family:var(--mono); font-size:0.6rem; color:var(--white3);
+    text-transform:uppercase; letter-spacing:0.12em; display:block; margin-bottom:6px;
+  }
+  .modal-input {
+    width:100%; background:rgba(255,255,255,0.05); border:1px solid rgba(100,60,220,0.3);
+    border-radius:8px; padding:9px 12px; color:var(--white);
+    font-family:var(--mono); font-size:0.75rem; outline:none; transition:border-color 0.2s;
+  }
+  .modal-input:focus { border-color:rgba(140,90,255,0.6); }
+  .modal-row { display:flex; gap:10px; }
+  .modal-row .modal-field { flex:1; }
+  .modal-actions { display:flex; gap:10px; justify-content:flex-end; margin-top:20px; }
+  .btn-cancel {
+    font-family:var(--mono); font-size:0.65rem; padding:8px 18px; border-radius:8px;
+    border:1px solid rgba(100,60,220,0.25); color:var(--white3); background:transparent;
+    cursor:pointer; letter-spacing:0.08em; transition:all 0.2s;
+  }
+  .btn-cancel:hover { color:var(--white2); background:rgba(80,50,180,0.1); }
+  .btn-confirm {
+    font-family:var(--mono); font-size:0.65rem; padding:8px 18px; border-radius:8px;
+    border:1px solid rgba(120,80,240,0.5); color:var(--white);
+    background:linear-gradient(135deg,rgba(90,50,200,0.5),rgba(30,60,200,0.4));
+    cursor:pointer; letter-spacing:0.08em; transition:all 0.2s;
+  }
+  .btn-confirm:hover { background:linear-gradient(135deg,rgba(100,60,220,0.7),rgba(40,70,220,0.6)); }
+
+  /* ── TASK EDIT MODAL ── */
+  .task-modal-grid { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+
+  /* ── TOOLTIP ── */
+  .tooltip {
+    position:fixed; background:#1a1a35; border:1px solid rgba(100,60,220,0.4);
+    border-radius:8px; padding:8px 12px; font-family:var(--mono); font-size:0.62rem;
+    color:var(--white2); pointer-events:none; z-index:300; max-width:200px;
+    line-height:1.5; animation:fadeIn 0.15s ease;
+  }
+
+  /* scrollbar hidden for collab */
+  #view-collab::-webkit-scrollbar { display:none; }
+
+  /* LANDING GRID REWORK */
+  .landing-cards-wrap {
+    display:grid; grid-template-columns:repeat(3,1fr); gap:16px;
+    width:min(820px,92vw);
+  }
+  .landing-cards-wrap .globe-card:nth-child(4) { grid-column:1; }
+  .landing-cards-wrap .globe-card:nth-child(5) { grid-column:3; }
+
+  .status-bar {
+    position:fixed; bottom:0; left:0; right:0; height:28px;
+    background:rgba(8,8,16,0.9); border-top:1px solid rgba(60,40,140,0.2);
+    display:flex; align-items:center; padding:0 20px; gap:20px; z-index:50;
+  }
+  .status-item { font-family:var(--mono); font-size:0.58rem; color:var(--white3); display:flex; align-items:center; gap:6px; }
+  .status-dot { width:6px; height:6px; border-radius:50%; }
+</style>
+</head>
+<body>
+
+<!-- LANDING -->
+<div id="landing">
+  <div class="landing-title">Performance Board</div>
+  <div class="landing-sub">Engineering Team · Purification Facility</div>
+  <div class="landing-cards-wrap">
+    <div class="globe-card" onclick="enterApp(0)">
+      <span class="globe-card-num">01</span>
+      <div class="globe-card-icon">⬡</div>
+      <div class="globe-card-title">Overview</div>
+      <div class="globe-card-desc">Team members · weighted tasks · completion status</div>
+    </div>
+    <div class="globe-card" onclick="enterApp(1)">
+      <span class="globe-card-num">02</span>
+      <div class="globe-card-icon">◈</div>
+      <div class="globe-card-title">Work Packages</div>
+      <div class="globe-card-desc">WP status · task assignment · weight &amp; criticality</div>
+    </div>
+    <div class="globe-card" onclick="enterApp(2)">
+      <span class="globe-card-num">03</span>
+      <div class="globe-card-icon">◎</div>
+      <div class="globe-card-title">Load</div>
+      <div class="globe-card-desc">Team capacity · overload detection · top 3 most loaded</div>
+    </div>
+    <div class="globe-card" onclick="enterApp(3)">
+      <span class="globe-card-num">04</span>
+      <div class="globe-card-icon">◉</div>
+      <div class="globe-card-title">Collaboration</div>
+      <div class="globe-card-desc">Task bubbles · shared ownership · connection map</div>
+    </div>
+    <div class="globe-card" onclick="enterApp(4)">
+      <span class="globe-card-num">05</span>
+      <div class="globe-card-icon">▲</div>
+      <div class="globe-card-title">Priority</div>
+      <div class="globe-card-desc">Top 3 critical tasks · multi-factor scoring · manual override</div>
+    </div>
+  </div>
+</div>
+
+<!-- APP -->
+<div id="app" style="display:none;">
+  <div id="nav">
+    <div class="nav-brand" onclick="goLanding()">TPB</div>
+    <div class="nav-tabs">
+      <div class="nav-tab active" onclick="switchView(0)">Overview</div>
+      <div class="nav-tab" onclick="switchView(1)">Work Packages</div>
+      <div class="nav-tab" onclick="switchView(2)">Load</div>
+      <div class="nav-tab" onclick="switchView(3)">Collaboration</div>
+      <div class="nav-tab" onclick="switchView(4)">Priority</div>
+    </div>
+    <div class="nav-spacer"></div>
+    <div class="nav-btn" onclick="openAddTM()">+ Team Member</div>
+    &nbsp;
+    <div class="nav-btn" onclick="openAddWP()">+ Work Package</div>
+  </div>
+  <div id="views">
+    <div class="view" id="view-main"></div>
+    <div class="view" id="view-wp"></div>
+    <div class="view" id="view-load"></div>
+    <div class="view" id="view-collab" style="position:relative;padding:0;overflow:hidden;">
+      <canvas id="collab-canvas"></canvas>
+    </div>
+    <div class="view" id="view-priority"></div>
+  </div>
+  <div class="status-bar" id="status-bar"></div>
+</div>
+
+<script>
+// ═══════════════════════════════════════════════════
+// STATE
+// ═══════════════════════════════════════════════════
+let state = {
+  teamMembers: [
+    { id:'TM1', label:'TM1' },
+    { id:'TM2', label:'TM2' },
+    { id:'TM3', label:'TM3' },
+    { id:'TM4', label:'TM4' },
+  ],
+  workPackages: [
+    { id:'WP1', title:'WP1', status:'neutral' },
+    { id:'WP2', title:'WP2', status:'neutral' },
+    { id:'WP3', title:'WP3', status:'neutral' },
+    { id:'WP4', title:'WP4', status:'neutral' },
+  ],
+  tasks: [],
+  currentView: 0,
+  priorityOverrides: [],
+};
+
+let taskIdCounter = 1;
+function uid() { return 't'+(taskIdCounter++); }
+
+// ── Persist to localStorage
+function save() { try { localStorage.setItem('tpb_state', JSON.stringify(state)); } catch(e){} }
+function load() {
+  try {
+    const s = localStorage.getItem('tpb_state');
+    if (s) {
+      const parsed = JSON.parse(s);
+      state = { ...state, ...parsed };
+      // restore task id counter
+      if (state.tasks.length) {
+        const maxId = Math.max(...state.tasks.map(t => parseInt(t.id.replace('t',''))||0));
+        taskIdCounter = maxId + 1;
+      }
+    }
+  } catch(e) {}
+}
+load();
+
+// ═══════════════════════════════════════════════════
+// NAVIGATION
+// ═══════════════════════════════════════════════════
+function enterApp(viewIndex) {
+  const landing = document.getElementById('landing');
+  landing.classList.add('exit');
+  setTimeout(() => {
+    landing.style.display = 'none';
+    document.getElementById('app').style.display = 'flex';
+    switchView(viewIndex, false);
+    renderAll();
+  }, 680);
+}
+
+function goLanding() {
+  document.getElementById('app').style.display = 'none';
+  const landing = document.getElementById('landing');
+  landing.style.display = 'flex';
+  landing.classList.remove('exit');
+}
+
+let isAnimating = false;
+function switchView(idx, animate=true) {
+  if (isAnimating) return;
+  const tabs = document.querySelectorAll('.nav-tab');
+  tabs.forEach((t,i) => t.classList.toggle('active', i===idx));
+  const views = document.querySelectorAll('.view');
+  const prev = state.currentView;
+  state.currentView = idx;
+  if (!animate || prev === idx) {
+    views.forEach((v,i) => {
+      v.style.transform = `translateX(${(i - idx) * 100}%)`;
+      v.style.opacity = i===idx ? '1' : '0.4';
+    });
+    renderView(idx);
+    return;
+  }
+  isAnimating = true;
+  views.forEach((v,i) => {
+    v.style.transition = 'none';
+    v.style.transform = `translateX(${(i - idx) * 100}%)`;
+  });
+  requestAnimationFrame(() => {
+    views.forEach((v,i) => {
+      v.style.transition = `transform var(--transition), opacity var(--transition)`;
+      v.style.opacity = i===idx ? '1' : '0.4';
+    });
+    renderView(idx);
+    setTimeout(() => { isAnimating = false; }, 600);
+  });
+}
+
+function renderAll() { for(let i=0;i<5;i++) renderView(i); }
+function renderView(i) {
+  if(i===0) renderMain();
+  if(i===1) renderWP();
+  if(i===2) renderLoad();
+  if(i===3) renderCollab();
+  if(i===4) renderPriority();
+  renderStatus();
+}
+
+// ═══════════════════════════════════════════════════
+// HELPERS
+// ═══════════════════════════════════════════════════
+function weightColor(w) {
+  if(w >= 8) return '#e03060';
+  if(w >= 5) return '#e0a020';
+  return '#6030d0';
+}
+function scoreColor(score) {
+  const t = Math.min(score/10,1);
+  const r = Math.round(16 + t*224);
+  const g = Math.round(192 - t*160);
+  const b = Math.round(112 - t*80);
+  return `rgb(${r},${g},${b})`;
+}
+function getTMTasks(tmId) {
+  return state.tasks.filter(t => t.assignee === tmId && !t.archived);
+}
+function getTMLoad(tmId) {
+  return getTMTasks(tmId).filter(t=>!t.completed).reduce((s,t)=>s+(t.weight||0),0);
+}
+function getPriorityScore(task) {
+  const wp = state.workPackages.find(w=>w.id===task.wpId);
+  const wpRed = wp && wp.status==='red' ? 3 : 0;
+  return (task.weight||0) + (task.criticality||0) + wpRed;
+}
+
+// ═══════════════════════════════════════════════════
+// VIEW 0: OVERVIEW / MAIN
+// ═══════════════════════════════════════════════════
+function renderMain() {
+  const el = document.getElementById('view-main');
+  const tms = state.teamMembers;
+  let html = `<div class="section-header"><span class="section-title">Team Overview</span><span class="section-badge">${tms.length} Members</span></div>`;
+  html += `<div class="tm-grid">`;
+  tms.forEach(tm => {
+    const tasks = getTMTasks(tm.id);
+    const active = tasks.filter(t=>!t.completed);
+    const done = tasks.filter(t=>t.completed);
+    const load = active.reduce((s,t)=>s+(t.weight||0),0);
+    html += `
+      <div class="tm-col" id="tmcol-${tm.id}">
+        <div class="tm-col-header">
+          <div class="tm-avatar">${tm.label.replace('TM','').substring(0,3)}</div>
+          <div>
+            <div class="tm-name">${tm.label}</div>
+          </div>
+          <div class="tm-score-pill" style="color:${scoreColor(load)}">${load.toFixed(0)}</div>
+        </div>
+        ${active.length===0 ? `<div class="tm-empty">No active tasks</div>` : ''}
+        ${active.sort((a,b)=>(b.weight||0)-(a.weight||0)).map(t=>`
+          <div class="task-item" onclick="openTaskEdit('${t.id}')">
+            <div class="task-weight-bar" style="background:${weightColor(t.weight||0)}"></div>
+            <div class="task-name">${t.name}</div>
+            <div class="task-meta">
+              <span class="task-w">W${t.weight||0}</span>
+              <span class="task-crit">C${t.criticality||0}</span>
+              <div class="task-done-btn ${t.completed?'done':''}" onclick="event.stopPropagation();toggleDone('${t.id}')"></div>
+            </div>
+          </div>
+        `).join('')}
+        ${done.length>0 ? `<div style="font-family:var(--mono);font-size:0.58rem;color:var(--white3);margin-top:8px;letter-spacing:0.08em;">${done.length} COMPLETED</div>` : ''}
+      </div>`;
+  });
+  html += `</div>`;
+  el.innerHTML = html;
+
+  // position views initially
+  document.querySelectorAll('.view').forEach((v,i)=>{
+    if(v.style.transform==='') v.style.transform=`translateX(${(i-state.currentView)*100}%)`;
+  });
+}
+
+// ═══════════════════════════════════════════════════
+// VIEW 1: WORK PACKAGES
+// ═══════════════════════════════════════════════════
+function renderWP() {
+  const el = document.getElementById('view-wp');
+  let html = `<div class="section-header"><span class="section-title">Work Packages</span><span class="section-badge">${state.workPackages.length} WPs</span></div>`;
+  html += `<div class="wp-grid">`;
+  state.workPackages.forEach(wp => {
+    const tasks = state.tasks.filter(t=>t.wpId===wp.id && !t.archived);
+    html += `
+      <div class="wp-card status-${wp.status}" id="wpcard-${wp.id}">
+        <div class="wp-header">
+          <div class="wp-status-dot ${wp.status}" onclick="cycleWPStatus('${wp.id}')" title="Click to toggle status"></div>
+          <div class="wp-title" contenteditable="true" onblur="renameWP('${wp.id}',this.textContent)">${wp.title}</div>
+          <div class="wp-remove-btn" onclick="removeWP('${wp.id}')">✕</div>
+        </div>
+        <div class="wp-tasks" id="wp-tasks-${wp.id}">
+          <div class="wp-col-labels">
+            <span class="wp-col-label">Task</span>
+            <span class="wp-col-label" style="text-align:center">Weight</span>
+            <span class="wp-col-label" style="text-align:center">Crit.</span>
+            <span></span>
+          </div>
+          ${tasks.map(t=>`
+            <div class="wp-task-row" id="wptrow-${t.id}">
+              <div style="position:relative">
+                <input class="wp-task-input" value="${t.name}" onchange="updateTask('${t.id}','name',this.value)" style="width:100%;padding-right:52px">
+                <select class="wp-assign-select" onchange="updateTask('${t.id}','assignee',this.value)"
+                  style="position:absolute;right:0;top:0;width:48px;border-radius:0 6px 6px 0;border-left:none;height:100%;">
+                  <option value="">—</option>
+                  ${state.teamMembers.map(tm=>`<option value="${tm.id}" ${t.assignee===tm.id?'selected':''}>${tm.label}</option>`).join('')}
+                </select>
+              </div>
+              <input class="wp-num-input" type="number" min="1" max="10" value="${t.weight||''}" placeholder="1-10" onchange="updateTask('${t.id}','weight',+this.value)">
+              <input class="wp-num-input" type="number" min="1" max="10" value="${t.criticality||''}" placeholder="1-10" onchange="updateTask('${t.id}','criticality',+this.value)">
+              <div class="wp-task-del" onclick="deleteTask('${t.id}')">✕</div>
+            </div>
+          `).join('')}
+        </div>
+        <div class="wp-footer">
+          <div class="add-task-btn" onclick="addTaskToWP('${wp.id}')">+ Add Task</div>
+        </div>
+      </div>`;
+  });
+  html += `</div>`;
+  el.innerHTML = html;
+}
+
+// ═══════════════════════════════════════════════════
+// VIEW 2: LOAD
+// ═══════════════════════════════════════════════════
+function renderLoad() {
+  const el = document.getElementById('view-load');
+  const scored = state.teamMembers.map(tm => ({
+    tm, score: getTMLoad(tm.id)
+  })).sort((a,b)=>b.score-a.score);
+  const top3 = scored.slice(0,3);
+
+  let html = `<div class="section-header"><span class="section-title">Team Load</span><span class="section-badge">Capacity Overview</span></div>`;
+  
+  html += `<div class="load-top3">`;
+  ['🥇','🥈','🥉'].forEach((medal,i) => {
+    if(!top3[i]) return;
+    const {tm,score} = top3[i];
+    html += `<div class="load-top-card">
+      <div class="load-top-rank">${medal} #${i+1} Most Loaded</div>
+      <div class="load-top-name">${tm.label}</div>
+      <div class="load-top-score" style="color:${scoreColor(score)}">${score.toFixed(0)}</div>
+    </div>`;
+  });
+  html += `</div>`;
+
+  html += `<div class="load-field" id="load-field">
+    <div class="load-labels">
+      <span>LOW LOAD</span><span>MODERATE</span><span>HIGH</span><span>CRITICAL</span>
+    </div>
+    <div style="position:relative;height:180px;">`;
+  
+  scored.forEach((item,i) => {
+    const {tm, score} = item;
+    const pct = Math.min(score/12,1);
+    const left = (pct * 85 + 2);
+    const top = 20 + (i % 3) * 48;
+    const size = 44 + Math.min(score,10)*2;
+    const col = scoreColor(score);
+    html += `<div class="tm-bubble" style="
+      left:${left}%;top:${top}px;
+      width:${size}px;height:${size}px;
+      background:${col}22;border-color:${col}66;
+      color:${col};transform:translate(-50%,-50%);
+      font-size:${score>9?'0.6rem':'0.65rem'};
+    " title="${tm.label}: Load ${score.toFixed(0)}">${tm.label}</div>`;
+  });
+
+  html += `</div>
+    <div class="load-gradient"></div>
+  </div>`;
+  
+  el.innerHTML = html;
+}
+
+// ═══════════════════════════════════════════════════
+// VIEW 3: COLLABORATION (Canvas)
+// ═══════════════════════════════════════════════════
+function renderCollab() {
+  const canvas = document.getElementById('collab-canvas');
+  const container = document.getElementById('view-collab');
+  canvas.width = container.clientWidth || window.innerWidth;
+  canvas.height = container.clientHeight || window.innerHeight - 80;
+  const ctx = canvas.getContext('2d');
+  const W = canvas.width, H = canvas.height;
+
+  ctx.clearRect(0,0,W,H);
+  ctx.fillStyle = '#080810';
+  ctx.fillRect(0,0,W,H);
+
+  const activeTasks = state.tasks.filter(t=>!t.completed&&!t.archived&&t.assignee);
+  if(activeTasks.length===0) {
+    ctx.fillStyle = 'rgba(240,240,255,0.2)';
+    ctx.font = '14px Space Mono, monospace';
+    ctx.textAlign='center';
+    ctx.fillText('No assigned tasks to display', W/2, H/2);
+    return;
+  }
+
+  // Layout tasks in a rough circle
+  const cx=W/2, cy=H/2;
+  const radius = Math.min(W,H)*0.3;
+  const taskPositions = {};
+  activeTasks.forEach((t,i)=>{
+    const angle = (i/activeTasks.length)*Math.PI*2 - Math.PI/2;
+    const r = radius * (0.5 + 0.5*(t.weight||5)/10);
+    taskPositions[t.id] = {
+      x: cx + Math.cos(angle)*r,
+      y: cy + Math.sin(angle)*r,
+      r: 20 + (t.weight||1)*2.5
+    };
+  });
+
+  // TM positions around outer ring
+  const tmPositions = {};
+  state.teamMembers.forEach((tm,i)=>{
+    const angle = (i/state.teamMembers.length)*Math.PI*2 - Math.PI/2;
+    tmPositions[tm.id] = {
+      x: cx + Math.cos(angle)*(radius*1.6),
+      y: cy + Math.sin(angle)*(radius*1.6),
+    };
+  });
+
+  // Draw connections
+  activeTasks.forEach(t=>{
+    const tp = taskPositions[t.id];
+    const tmp = tmPositions[t.assignee];
+    if(!tmp) return;
+    const grad = ctx.createLinearGradient(tp.x,tp.y,tmp.x,tmp.y);
+    grad.addColorStop(0,'rgba(96,48,208,0.4)');
+    grad.addColorStop(1,'rgba(26,64,200,0.2)');
+    ctx.beginPath();
+    ctx.moveTo(tp.x,tp.y);
+    ctx.lineTo(tmp.x,tmp.y);
+    ctx.strokeStyle=grad;
+    ctx.lineWidth=1.5;
+    ctx.stroke();
+  });
+
+  // Draw task bubbles
+  activeTasks.forEach(t=>{
+    const p = taskPositions[t.id];
+    const wp = state.workPackages.find(w=>w.id===t.wpId);
+    const isRed = wp&&wp.status==='red';
+    const col = isRed ? '#e03060' : weightColor(t.weight||5);
+
+    // Glow
+    const grd = ctx.createRadialGradient(p.x,p.y,0,p.x,p.y,p.r);
+    grd.addColorStop(0,col+'55');
+    grd.addColorStop(1,'transparent');
+    ctx.beginPath(); ctx.arc(p.x,p.y,p.r*1.4,0,Math.PI*2);
+    ctx.fillStyle=grd; ctx.fill();
+
+    // Circle
+    ctx.beginPath(); ctx.arc(p.x,p.y,p.r,0,Math.PI*2);
+    ctx.fillStyle=col+'22'; ctx.fill();
+    ctx.strokeStyle=col+'88'; ctx.lineWidth=1.5; ctx.stroke();
+
+    // Label
+    ctx.fillStyle='rgba(240,240,255,0.9)';
+    ctx.font=`bold ${Math.max(9,11-t.name.length*0.3)}px Syne, sans-serif`;
+    ctx.textAlign='center'; ctx.textBaseline='middle';
+    const words=t.name.split(' ');
+    if(words.length<=2||t.name.length<10) {
+      ctx.fillText(t.name.substring(0,12),p.x,p.y);
+    } else {
+      ctx.fillText(words.slice(0,2).join(' '),p.x,p.y-6);
+      ctx.fillText(words.slice(2).join(' ').substring(0,10),p.x,p.y+8);
+    }
+    ctx.font='9px Space Mono, monospace';
+    ctx.fillStyle='rgba(240,240,255,0.4)';
+    ctx.fillText(`W${t.weight||0} C${t.criticality||0}`,p.x,p.y+p.r+10);
+  });
+
+  // Draw TM droplets
+  state.teamMembers.forEach(tm=>{
+    const p = tmPositions[tm.id];
+    const hasTasks = activeTasks.some(t=>t.assignee===tm.id);
+    const col = hasTasks ? '#7040e8' : 'rgba(120,100,200,0.3)';
+
+    ctx.beginPath(); ctx.arc(p.x,p.y,22,0,Math.PI*2);
+    ctx.fillStyle=hasTasks?'rgba(100,50,220,0.2)':'rgba(50,40,100,0.15)';
+    ctx.fill();
+    ctx.strokeStyle=col; ctx.lineWidth=1.5; ctx.stroke();
+
+    ctx.fillStyle=hasTasks?'rgba(240,240,255,0.9)':'rgba(240,240,255,0.35)';
+    ctx.font='bold 11px Space Mono, monospace';
+    ctx.textAlign='center'; ctx.textBaseline='middle';
+    ctx.fillText(tm.label,p.x,p.y);
+  });
+}
+
+// ═══════════════════════════════════════════════════
+// VIEW 4: PRIORITY
+// ═══════════════════════════════════════════════════
+function renderPriority() {
+  const el = document.getElementById('view-priority');
+  const activeTasks = state.tasks.filter(t=>!t.completed&&!t.archived);
+  const scored = activeTasks.map(t=>({
+    task:t, score:getPriorityScore(t),
+    wp: state.workPackages.find(w=>w.id===t.wpId)
+  })).sort((a,b)=>b.score-a.score);
+
+  // Apply manual overrides
+  state.priorityOverrides.forEach(oid=>{
+    const i = scored.findIndex(s=>s.task.id===oid);
+    if(i>0){ const item=scored.splice(i,1)[0]; scored.unshift(item); }
+  });
+
+  const top3 = scored.slice(0,3);
+  const maxScore = scored[0]?.score||1;
+
+  let html = `<div class="section-header"><span class="section-title">Priority View</span><span class="section-badge">Top Tasks</span></div>`;
+  
+  if(top3.length===0){
+    html+=`<div style="font-family:var(--mono);font-size:0.75rem;color:var(--white3);text-align:center;padding:60px 0;">No active tasks</div>`;
+    el.innerHTML=html; return;
+  }
+
+  html += `<div class="priority-top">`;
+  top3.forEach(({task,score,wp},i)=>{
+    const tm = state.teamMembers.find(m=>m.id===task.assignee);
+    const colors=['rgba(220,48,96','rgba(224,160,32','rgba(96,48,208'];
+    const isOverride = state.priorityOverrides.includes(task.id);
+    html += `
+      <div class="priority-card" onclick="togglePriorityOverride('${task.id}')">
+        <div class="priority-rank">${i+1}</div>
+        <div class="priority-task-name">${task.name||'Unnamed task'}</div>
+        <div class="priority-meta">
+          ${tm?`<span class="priority-pill" style="background:rgba(90,50,200,0.15);border-color:rgba(100,60,220,0.3);color:rgba(160,120,255,0.9)">${tm.label}</span>`:''}
+          ${wp?`<span class="priority-pill" style="background:rgba(80,80,120,0.15);border-color:rgba(100,100,180,0.3);color:var(--white2)">${wp.title}</span>`:''}
+          ${wp&&wp.status==='red'?`<span class="priority-pill" style="background:rgba(220,48,96,0.15);border-color:rgba(220,48,96,0.4);color:${colors[0]},0.9)">WP ISSUE</span>`:''}
+          ${isOverride?`<span class="priority-pill" style="background:rgba(224,160,32,0.15);border-color:rgba(224,160,32,0.4);color:rgba(224,160,32,0.9)">MANUAL</span>`:''}
+        </div>
+        <div style="display:flex;gap:12px;font-family:var(--mono);font-size:0.62rem;color:var(--white3)">
+          <span>Weight: <span style="color:var(--white2)">${task.weight||0}</span></span>
+          <span>Criticality: <span style="color:var(--white2)">${task.criticality||0}</span></span>
+          <span>Score: <span style="color:${colors[i]},0.9)">${score}</span></span>
+        </div>
+        <div class="priority-score-bar" style="width:${(score/maxScore*100)}%"></div>
+      </div>`;
+  });
+  html += `</div>`;
+
+  // Full ranking table
+  html += `<div class="section-header" style="margin-top:8px"><span class="section-title" style="font-size:0.8rem">Full Ranking</span></div>`;
+  html += `<div class="priority-full-list">
+    <div class="priority-full-row header">
+      <span>#</span><span>Task</span><span>Assignee</span><span>Weight</span><span>Criticality</span><span>Score</span>
+    </div>`;
+  scored.forEach(({task,score,wp},i)=>{
+    const tm = state.teamMembers.find(m=>m.id===task.assignee);
+    const isOverride = state.priorityOverrides.includes(task.id);
+    html += `<div class="priority-full-row" onclick="togglePriorityOverride('${task.id}')">
+      <span style="color:var(--white3)">${i+1}</span>
+      <span style="color:var(--white2)">${task.name||'—'} ${isOverride?'<span style="color:rgba(224,160,32,0.8);font-size:0.55rem">↑MANUAL</span>':''}</span>
+      <span style="color:rgba(160,120,255,0.8)">${tm?tm.label:'—'}</span>
+      <span style="color:${weightColor(task.weight||0)}">${task.weight||0}</span>
+      <span>${task.criticality||0}</span>
+      <span style="color:var(--white)">${score}</span>
+    </div>`;
+  });
+  html += `</div>`;
+  
+  el.innerHTML = html;
+}
+
+// ═══════════════════════════════════════════════════
+// STATUS BAR
+// ═══════════════════════════════════════════════════
+function renderStatus() {
+  const active = state.tasks.filter(t=>!t.completed&&!t.archived);
+  const done = state.tasks.filter(t=>t.completed&&!t.archived);
+  const redWPs = state.workPackages.filter(w=>w.status==='red').length;
+  const overloaded = state.teamMembers.filter(tm=>getTMLoad(tm.id)>10).length;
+  const el = document.getElementById('status-bar');
+  el.innerHTML = `
+    <div class="status-item"><div class="status-dot" style="background:rgba(120,80,255,0.6)"></div>${active.length} Active Tasks</div>
+    <div class="status-item"><div class="status-dot" style="background:var(--green)"></div>${done.length} Completed</div>
+    ${redWPs?`<div class="status-item"><div class="status-dot" style="background:var(--red)"></div>${redWPs} WP Issue${redWPs>1?'s':''}</div>`:''}
+    ${overloaded?`<div class="status-item"><div class="status-dot" style="background:var(--red)"></div>${overloaded} Overloaded TM${overloaded>1?'s':''}</div>`:''}
+  `;
+}
+
+// ═══════════════════════════════════════════════════
+// ACTIONS
+// ═══════════════════════════════════════════════════
+function toggleDone(taskId) {
+  const t = state.tasks.find(t=>t.id===taskId);
+  if(t){ t.completed=!t.completed; t.completedAt=t.completed?new Date().toISOString():null; }
+  save(); renderAll();
+}
+function cycleWPStatus(wpId) {
+  const wp = state.workPackages.find(w=>w.id===wpId);
+  if(!wp) return;
+  const cycle = {neutral:'green',green:'red',red:'neutral'};
+  wp.status = cycle[wp.status]||'neutral';
+  save(); renderAll();
+}
+function renameWP(wpId, newTitle) {
+  const wp = state.workPackages.find(w=>w.id===wpId);
+  if(wp) { wp.title=newTitle.trim()||wp.title; save(); renderStatus(); }
+}
+function removeWP(wpId) {
+  state.workPackages = state.workPackages.filter(w=>w.id!==wpId);
+  state.tasks = state.tasks.filter(t=>t.wpId!==wpId);
+  save(); renderAll();
+}
+function addTaskToWP(wpId) {
+  const t = { id:uid(), wpId, name:'New Task', assignee:'', weight:5, criticality:5, completed:false, archived:false, createdAt:new Date().toISOString() };
+  state.tasks.push(t);
+  save(); renderWP(); renderMain(); renderStatus();
+}
+function updateTask(taskId, field, val) {
+  const t = state.tasks.find(t=>t.id===taskId);
+  if(t){ t[field]=val; save(); renderMain(); renderLoad(); renderPriority(); renderStatus(); }
+}
+function deleteTask(taskId) {
+  state.tasks = state.tasks.filter(t=>t.id!==taskId);
+  save(); renderAll();
+}
+function togglePriorityOverride(taskId) {
+  const i = state.priorityOverrides.indexOf(taskId);
+  if(i>=0) state.priorityOverrides.splice(i,1);
+  else state.priorityOverrides.unshift(taskId);
+  save(); renderPriority();
+}
+
+// ═══════════════════════════════════════════════════
+// MODALS
+// ═══════════════════════════════════════════════════
+function openAddTM() {
+  showModal(`
+    <div class="modal-title">Add Team Member</div>
+    <div class="modal-field">
+      <label class="modal-label">Initials / Label</label>
+      <input class="modal-input" id="m-tm-label" placeholder="e.g. TM5, NK, JH" maxlength="6">
+    </div>
+    <div class="modal-actions">
+      <div class="btn-cancel" onclick="closeModal()">Cancel</div>
+      <div class="btn-confirm" onclick="confirmAddTM()">Add Member</div>
+    </div>
+  `);
+  setTimeout(()=>document.getElementById('m-tm-label')?.focus(),50);
+}
+function confirmAddTM() {
+  const label = document.getElementById('m-tm-label')?.value.trim();
+  if(!label) return;
+  const id = 'TM'+(Date.now());
+  state.teamMembers.push({id, label});
+  save(); closeModal(); renderAll();
+}
+function openAddWP() {
+  showModal(`
+    <div class="modal-title">Add Work Package</div>
+    <div class="modal-field">
+      <label class="modal-label">Work Package Name</label>
+      <input class="modal-input" id="m-wp-title" placeholder="e.g. WP5, Filtration Unit, ...">
+    </div>
+    <div class="modal-actions">
+      <div class="btn-cancel" onclick="closeModal()">Cancel</div>
+      <div class="btn-confirm" onclick="confirmAddWP()">Add WP</div>
+    </div>
+  `);
+  setTimeout(()=>document.getElementById('m-wp-title')?.focus(),50);
+}
+function confirmAddWP() {
+  const title = document.getElementById('m-wp-title')?.value.trim();
+  if(!title) return;
+  const id = 'WP'+(Date.now());
+  state.workPackages.push({id, title, status:'neutral'});
+  save(); closeModal(); renderAll();
+}
+function openTaskEdit(taskId) {
+  const t = state.tasks.find(t=>t.id===taskId);
+  if(!t) return;
+  showModal(`
+    <div class="modal-title">Edit Task</div>
+    <div class="modal-field">
+      <label class="modal-label">Task Name</label>
+      <input class="modal-input" id="m-t-name" value="${t.name}">
+    </div>
+    <div class="modal-row">
+      <div class="modal-field">
+        <label class="modal-label">Assignee</label>
+        <select class="modal-input" id="m-t-assignee">
+          <option value="">Unassigned</option>
+          ${state.teamMembers.map(tm=>`<option value="${tm.id}" ${t.assignee===tm.id?'selected':''}>${tm.label}</option>`).join('')}
+        </select>
+      </div>
+      <div class="modal-field">
+        <label class="modal-label">Work Package</label>
+        <select class="modal-input" id="m-t-wp">
+          <option value="">None</option>
+          ${state.workPackages.map(wp=>`<option value="${wp.id}" ${t.wpId===wp.id?'selected':''}>${wp.title}</option>`).join('')}
+        </select>
+      </div>
+    </div>
+    <div class="modal-row">
+      <div class="modal-field">
+        <label class="modal-label">Weight (1–10)</label>
+        <input class="modal-input" type="number" id="m-t-weight" min="1" max="10" value="${t.weight||5}">
+      </div>
+      <div class="modal-field">
+        <label class="modal-label">Criticality (1–10)</label>
+        <input class="modal-input" type="number" id="m-t-crit" min="1" max="10" value="${t.criticality||5}">
+      </div>
+    </div>
+    <div class="modal-actions" style="justify-content:space-between">
+      <div class="btn-cancel" style="color:rgba(220,48,96,0.7);border-color:rgba(220,48,96,0.2)" onclick="deleteTask('${t.id}');closeModal()">Delete</div>
+      <div style="display:flex;gap:10px">
+        <div class="btn-cancel" onclick="closeModal()">Cancel</div>
+        <div class="btn-confirm" onclick="confirmTaskEdit('${t.id}')">Save</div>
+      </div>
+    </div>
+  `);
+  setTimeout(()=>document.getElementById('m-t-name')?.focus(),50);
+}
+function confirmTaskEdit(taskId) {
+  const t = state.tasks.find(t=>t.id===taskId);
+  if(!t) return;
+  t.name = document.getElementById('m-t-name').value.trim()||t.name;
+  t.assignee = document.getElementById('m-t-assignee').value;
+  t.wpId = document.getElementById('m-t-wp').value;
+  t.weight = parseInt(document.getElementById('m-t-weight').value)||5;
+  t.criticality = parseInt(document.getElementById('m-t-crit').value)||5;
+  save(); closeModal(); renderAll();
+}
+
+function showModal(inner) {
+  closeModal();
+  const overlay = document.createElement('div');
+  overlay.className='modal-overlay'; overlay.id='modal-overlay';
+  overlay.onclick = e => { if(e.target===overlay) closeModal(); };
+  overlay.innerHTML = `<div class="modal">${inner}</div>`;
+  document.body.appendChild(overlay);
+}
+function closeModal() {
+  document.getElementById('modal-overlay')?.remove();
+}
+
+// Keyboard ESC closes modal
+document.addEventListener('keydown', e => { if(e.key==='Escape') closeModal(); });
+
+// ── On load, init view positions
+document.addEventListener('DOMContentLoaded', ()=>{
+  document.querySelectorAll('.view').forEach((v,i)=>{
+    v.style.transform=`translateX(${(i - 0)*100}%)`;
+    v.style.opacity = i===0?'1':'0.4';
+  });
+});
+
+// Resize collab canvas when window resizes
+window.addEventListener('resize', ()=>{
+  if(state.currentView===3) renderCollab();
+});
+</script>
+</body>
+</html>
