@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Team Performance Board — Login</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Outfit',sans-serif;background:#f8f8f8;min-height:100vh;display:flex;align-items:center;justify-content:center;}
+.login-wrap{width:100%;max-width:400px;padding:24px;}
+.login-card{background:#fff;border:0.5px solid #e2e2e2;border-radius:20px;padding:40px 36px;box-shadow:0 4px 32px rgba(0,0,0,.07);}
+.login-logo{text-align:center;margin-bottom:32px;}
+.login-logo-text{font-size:26px;font-weight:300;color:#111;letter-spacing:-.02em;}
+.login-logo-text span{font-weight:600;}
+.login-logo-sub{font-size:11px;color:#aaa;letter-spacing:.15em;text-transform:uppercase;margin-top:4px;}
+.field{margin-bottom:16px;}
+.field label{display:block;font-size:11px;color:#888;letter-spacing:.1em;text-transform:uppercase;margin-bottom:6px;}
+.field input{width:100%;font-size:14px;padding:10px 14px;border-radius:10px;border:0.5px solid #ddd;background:#fafafa;color:#111;font-family:inherit;outline:none;transition:border-color .2s;}
+.field input:focus{border-color:#6366f1;background:#fff;}
+.login-btn{width:100%;font-size:14px;font-weight:600;padding:11px;border-radius:10px;border:none;background:#6366f1;color:#fff;cursor:pointer;font-family:inherit;transition:background .2s;margin-top:8px;}
+.login-btn:hover{background:#4f46e5;}
+.login-btn:disabled{background:#a5b4fc;cursor:not-allowed;}
+.error-msg{font-size:12px;color:#dc2626;background:#fef2f2;border:0.5px solid #fca5a5;border-radius:8px;padding:10px 14px;margin-top:14px;display:none;}
+.error-msg.show{display:block;}
+.forgot-link{text-align:center;margin-top:16px;font-size:12px;color:#aaa;}
+.forgot-link a{color:#6366f1;text-decoration:none;cursor:pointer;}
+.forgot-link a:hover{text-decoration:underline;}
+.success-msg{font-size:12px;color:#16a34a;background:#f0fdf4;border:0.5px solid #86efac;border-radius:8px;padding:10px 14px;margin-top:14px;display:none;}
+.success-msg.show{display:block;}
+</style>
+</head>
+<body>
+<div class="login-wrap">
+  <div class="login-card">
+    <div class="login-logo">
+      <div class="login-logo-text">Work<span>load</span></div>
+      <div class="login-logo-sub">Team Performance Board</div>
+    </div>
+    <div class="field">
+      <label>Email</label>
+      <input type="email" id="email" placeholder="you@example.com" onkeydown="if(event.key==='Enter')login()">
+    </div>
+    <div class="field">
+      <label>Password</label>
+      <input type="password" id="password" placeholder="••••••••" onkeydown="if(event.key==='Enter')login()">
+    </div>
+    <button class="login-btn" id="login-btn" onclick="login()">Sign in</button>
+    <div class="error-msg" id="error-msg"></div>
+    <div class="success-msg" id="success-msg"></div>
+    <div class="forgot-link"><a onclick="resetPassword()">Forgot password?</a></div>
+  </div>
+</div>
+
+<script>
+const SUPA_URL='https://oqkpqdxjjkpmbabijvsf.supabase.co';
+const SUPA_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9xa3BxZHhqamtwbWJhYmlqdnNmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODA2NzMzNzIsImV4cCI6MjA5NjI0OTM3Mn0.VVYVzmoCLsDyV1Cea2WcorTNjyMw6zlw6AmlmUq0sZI';
+const db=supabase.createClient(SUPA_URL,SUPA_KEY);
+
+// If already logged in, go straight to dashboard
+db.auth.getSession().then(({data:{session}})=>{
+  if(session) window.location.href='dashboard.html';
+});
+
+function showError(msg){
+  const el=document.getElementById('error-msg');
+  el.textContent=msg;el.classList.add('show');
+  document.getElementById('success-msg').classList.remove('show');
+}
+function showSuccess(msg){
+  const el=document.getElementById('success-msg');
+  el.textContent=msg;el.classList.add('show');
+  document.getElementById('error-msg').classList.remove('show');
+}
+function setLoading(on){
+  const btn=document.getElementById('login-btn');
+  btn.disabled=on;btn.textContent=on?'Signing in…':'Sign in';
+}
+
+async function login(){
+  const email=document.getElementById('email').value.trim();
+  const password=document.getElementById('password').value;
+  if(!email||!password){showError('Please enter your email and password.');return;}
+  setLoading(true);
+  const {data,error}=await db.auth.signInWithPassword({email,password});
+  setLoading(false);
+  if(error){showError(error.message);return;}
+  window.location.href='dashboard.html';
+}
+
+async function resetPassword(){
+  const email=document.getElementById('email').value.trim();
+  if(!email){showError('Enter your email address first, then click Forgot password.');return;}
+  const {error}=await db.auth.resetPasswordForEmail(email,{redirectTo:window.location.origin+'/dashboard.html'});
+  if(error){showError(error.message);return;}
+  showSuccess('Password reset email sent. Check your inbox.');
+}
+</script>
+</body>
+</html>
